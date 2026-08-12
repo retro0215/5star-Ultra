@@ -42,3 +42,5 @@ future-plan/
 # JVM crash dumps from a Gradle daemon (never worth committing)
 hs_err_pid*.log
 replay_pid*.log
+
+/app/standard/
