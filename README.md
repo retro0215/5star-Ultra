@@ -75,7 +75,7 @@ Scan to join from your phone:
 - **Continue Watching** home with TMDB-enriched previews; Live / Movies / Series / Downloads / Guide sections
 - **Now Trending** Home showcase — current TMDB movie/series rankings matched to titles your active provider
   can actually play, with trailers, full cast/details, provider language/quality/season signals, and flexible
-  movie/series balancing
+  movie/series balancing; a dedicated Home setting turns it on/off, and it stays first when enabled
 - Per-profile customizable rows, Favorites & History, bulk rename rules, custom combined categories,
   inline + global search, and a multi-playlist switcher
 - Per-section panel widths for Live TV, Movies and Series, including a 0% option that completely hides
@@ -94,7 +94,10 @@ Scan to join from your phone:
 - Offline movies & episodes — pause/resume/retry, queue groups + storage bar, live poster status strip
 
 ### 🎨 Settings & Robustness
-- Material 3 theming & accent, interaction-aware **Glass Effect** with Clear/Balanced/Tinted/Custom presets over your own background photo (plus a readable no-wallpaper material), searchable settings, sidebar/category customization, adjustable panel widths, external player, weather chip
+- Material 3 theming & accent, unified browse panels, compact navigation, optional solid-mode Ambient Glow,
+  and interaction-aware **Glass Effect** with Ultra Clear/Clear/Balanced/Tinted/Opaque/Custom presets,
+  adaptive readability and real frost levels over your own background photo; searchable settings,
+  sidebar/category customization, adjustable panel widths, external player, weather chip
 - **Font customization** with 60%–140% app text sizing and separate main-interface/popup choices from five open-source fonts; settings are preserved in backup and restore, while subtitle styling remains independent
 - **24 complete interface languages** with System default, an in-app searchable language picker, RTL-aware navigation, and a language-first welcome flow on fresh installations
 - **Backup & Restore** locally or over Wi-Fi — a single `.own` file carrying your background image, optionally encrypted end to end with your own password (older `.json` backups still restore); in-app updates; memory-safe buffers, no-ANR threading, auto-reconnect, resilient imports & offline detection

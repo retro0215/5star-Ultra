@@ -100,6 +100,9 @@ fun CategoryRail(
     // Column width. Defaults to the stock rail width; Live/Movies/Series override it when the user has
     // turned on manual panel widths for that section (see PanelWidths.kt).
     width: androidx.compose.ui.unit.Dp = Dimens.RailWidthFixed,
+    // Browse screens place this column inside one shared content panel. Overlays keep the standalone
+    // panel so they remain independently raised above the screen beneath them.
+    showPanel: Boolean = true,
 ) {
     val colors = OwnTVTheme.colors
     var hasFocus by remember { mutableStateOf(false) }
@@ -132,7 +135,14 @@ fun CategoryRail(
 
     // Fixed full-label column in the screen's Row — a real grid column (no overlay), so it takes its own
     // space and nothing reflows when focus enters/leaves it.
-    Box(modifier = modifier.fillMaxHeight().width(width).roundedPanel(fillColor = RailPanelFill, surface = GlassSurface.SIDEBAR)) {
+    val railModifier = modifier.fillMaxHeight().width(width)
+    Box(
+        modifier = if (showPanel) {
+            railModifier.roundedPanel(fillColor = RailPanelFill, surface = GlassSurface.SIDEBAR)
+        } else {
+            railModifier
+        },
+    ) {
         LazyColumn(
             state = listState,
             modifier = Modifier
@@ -167,7 +177,11 @@ fun CategoryRail(
                 // on the top bar) — trap vertical exits; Left/Right/Back still leave normally.
                 .trapVerticalFocusExit()
                 .focusGroup(),
-            contentPadding = PaddingValues(vertical = Dimens.GapLarge, horizontal = 10.dp),
+            contentPadding = if (showPanel) {
+                PaddingValues(vertical = Dimens.GapLarge, horizontal = 10.dp)
+            } else {
+                PaddingValues(0.dp)
+            },
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(Dimens.GapSmall),
         ) {
@@ -229,12 +243,11 @@ private fun RailPill(
     val panelsGlassy = LocalGlass.current.isGlassy(GlassSurface.PANELS)
     // Shared 4-state nav ladder (see NavLadder.kt) — identical treatment to the sidebar nav items so
     // both panels read the same (#47): active+focused (full fill) → focused cursor (outline) →
-    // selected-idle (tonal fill + left accent bar) → idle. Glass focus fills snap so an old category
-    // cannot leave a dark plate behind while LazyColumn brings the new one into view.
+    // selected-idle (tonal fill + left accent bar) → idle. Focus fills snap in both material modes
+    // so an old category cannot leave a dark plate behind while LazyColumn moves the next one into view.
     val ladder = rememberNavLadderColors(
         selected = selected,
         focused = focused,
-        snapFocusFill = panelsGlassy,
     )
     val activeSelected = selected && focused
     val highlighted = focused || selected

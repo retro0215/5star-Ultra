@@ -145,7 +145,6 @@ fun SyncStatusPill(modifier: Modifier = Modifier) {
                 surface = GlassSurface.TOPBAR,
                 baseFill = colors.surfaceContainerHigh.copy(alpha = 0.72f),
                 shape = shape,
-                cornerRadius = radius,
                 frostScale = 0.8f,
             )
             .padding(horizontal = 14.dp, vertical = 7.dp),

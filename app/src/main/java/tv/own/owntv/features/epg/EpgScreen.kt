@@ -178,6 +178,7 @@ fun EpgScreen(
     onAddEpg: () -> Unit = {},
     restoreFocus: Boolean = false,
     onRestored: () -> Unit = {},
+    onContentScrolled: (Boolean) -> Unit = {},
     /** Required: every live tune in the app goes through the one shared path in LiveViewModel, so a
      *  channel gets the same Prefer HLS handling, ExoPlayer→mpv ladder, per-channel engine pin and
      *  external-player routing however the user reached it. */
@@ -201,6 +202,15 @@ fun EpgScreen(
     val colors = OwnTVTheme.colors
     val hScroll = rememberScrollState()
     val rowListState = androidx.compose.foundation.lazy.rememberLazyListState()
+    val chromeScrollThresholdPx = with(LocalDensity.current) { 8.dp.roundToPx() }
+    val contentScrolled by remember(hScroll, rowListState, chromeScrollThresholdPx) {
+        androidx.compose.runtime.derivedStateOf {
+            hScroll.value > chromeScrollThresholdPx ||
+                rowListState.firstVisibleItemIndex > 0 ||
+                rowListState.firstVisibleItemScrollOffset > chromeScrollThresholdPx
+        }
+    }
+    LaunchedEffect(contentScrolled) { onContentScrolled(contentScrolled) }
     val firstCell = remember { FocusRequester() }
     val tunedCell = remember { FocusRequester() }
     // The channel a dialog was opened from — focus returns to its row when the dialog closes.

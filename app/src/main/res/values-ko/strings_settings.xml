@@ -351,6 +351,7 @@
     <string name="settings_hardware_decoding">하드웨어 디코딩</string>
     <string name="settings_hardware_decoding_description">TV의 하드웨어 디코더를 사용합니다. 일부 스트림이 끊기거나 화면에 이상이 나타나면 끄세요.</string>
     <string name="settings_movies_series_player">영화 및 시리즈 플레이어</string>
+    <string name="settings_reset_player_choices">저장된 플레이어 선택 초기화</string>
     <string name="settings_external_player">외부 플레이어</string>
     <string name="settings_default_zoom">기본 화면 확대</string>
     <string name="settings_default_zoom_description">재생이 시작될 때 적용할 화면 비율/확대 방식입니다.</string>
@@ -397,6 +398,13 @@
     <string name="settings_external_player_description">외부 앱에서 열 섹션을 선택합니다.</string>
     <string name="settings_audio_delay_value"><xliff:g id="delay">%1$d</xliff:g> ms</string>
     <string name="settings_movies_player_description">mpv(권장)는 DTS/TrueHD 오디오와 특수한 파일을 비롯해 가장 다양한 형식을 지원하며 A/V 동기화 보정 기능도 제공합니다. 영화나 에피소드가 시작되지 않을 때만 ExoPlayer로 전환하세요. 일부 TV에서는 mpv로 재생할 수 없는 스트림을 재생하지만 DTS/TrueHD 오디오를 디코딩할 수 없고 A/V 동기화 보정 기능도 없습니다. 어느 쪽을 선택하든 실패하면 다른 플레이어가 자동으로 시도됩니다.</string>
+    <string name="settings_reset_player_choices_description">플레이어에서 개별 영화나 에피소드를 mpv와 ExoPlayer 간에 전환하면 그 선택이 다음을 위해 저장됩니다. 초기화하면 모두 다시 위 설정을 따릅니다. 라이브 채널의 저장된 선택은 유지됩니다.</string>
+    <string name="settings_reset_player_choices_none">저장된 항목 없음</string>
+    <plurals name="settings_reset_player_choices_count">
+        <item quantity="other"><xliff:g id="count">%1$d</xliff:g>개 저장됨</item>
+    </plurals>
+    <string name="settings_reset_player_choices_confirm">저장된 플레이어 선택을 초기화할까요?</string>
+    <string name="settings_reset_player_choices_confirm_description">모든 영화와 에피소드가 다시 “영화 및 시리즈 플레이어” 설정을 따릅니다. 개별 항목은 언제든지 플레이어에서 다시 전환할 수 있습니다.</string>
     <string name="settings_external_player_row_description">스트림을 내장 플레이어 대신 섹션별로 선택한 외부 앱(VLC, MX Player)에서 엽니다. 이 앱에서 디코딩할 수 없는 스트림을 재생하거나 다른 플레이어를 선호할 때 유용합니다. 외부에서 재생하는 동안에는 이어보기 위치와 이전/다음 기능을 사용할 수 없으며, 맞춤 User-Agent 또는 리퍼러가 필요한 스트림은 재생되지 않을 수 있습니다.</string>
     <string name="settings_resume_always">항상 이어보기</string>
     <string name="settings_resume_ask">이어볼지 묻기</string>
@@ -893,4 +901,20 @@
     <string name="settings_glass_preset_balanced_description">선명도, 깊이감 및 가독성 권장 설정입니다.</string>
     <string name="settings_glass_preset_tinted_description">복잡하거나 밝은 배경에 더 강한 표면 색상을 적용합니다.</string>
     <string name="settings_glass_preset_custom_description">저장된 투명도와 블러 값을 사용합니다.</string>
+    <string name="settings_ambient_glow">주변 광원</string>
+    <string name="settings_ambient_glow_description">단색 인터페이스에 설정 화면 스타일의 빛을 더합니다</string>
+    <string name="settings_ambient_glow_dialog_description">비글래스 인터페이스에 부드러운 강조색 광원을 추가합니다. 애니메이션이 켜져 있으면 천천히 은은하게 맥동합니다.</string>
+    <string name="settings_ambient_glow_effect">광원</string>
+    <string name="settings_ambient_glow_pulse">느린 맥동</string>
+    <string name="settings_glass_preset_ultra_clear">매우 투명</string>
+    <string name="settings_glass_preset_opaque">불투명</string>
+    <string name="settings_glass_preset_ultra_clear_description">가벼운 흐림으로 배경화면의 디테일을 최대한 표시합니다.</string>
+    <string name="settings_glass_preset_opaque_description">가장 강한 흐림으로 패널 밀도를 최대로 높입니다.</string>
+    <string name="settings_glass_highlight_title">하이라이트 강도</string>
+    <string name="settings_glass_highlight_description">포커스된 유리의 빛과 테두리를 조절합니다.</string>
+    <string name="settings_glass_live_preview">실시간 미리보기</string>
+    <string name="settings_glass_full_transparency_title">완전한 투명도 허용</string>
+    <string name="settings_glass_full_transparency_description">가장 투명한 유리를 위해 자동 가독성 제한을 끕니다.</string>
+    <string name="settings_glass_depth_title">깊이와 그림자</string>
+    <string name="settings_glass_depth_description">포커스 이동 조명, 은은한 시차 및 깊이 움직임을 켭니다.</string>
 </resources>

@@ -134,6 +134,7 @@ fun HomeScreen(
     onRestored: () -> Unit = {},
     previewEnabled: Boolean = true,
     firstRowFocusRequester: FocusRequester? = null,
+    onContentScrolled: (Boolean) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val state by vm.uiState.collectAsStateWithLifecycle()
@@ -143,6 +144,14 @@ fun HomeScreen(
     val isPreviewActive by vm.isPreviewActive.collectAsStateWithLifecycle()
     val lastInteractionMs by vm.lastHeroInteractionMs.collectAsStateWithLifecycle()
     val listState = androidx.compose.foundation.lazy.rememberLazyListState()
+    val chromeScrollThresholdPx = with(LocalDensity.current) { 8.dp.roundToPx() }
+    val contentScrolled by remember(listState, chromeScrollThresholdPx) {
+        androidx.compose.runtime.derivedStateOf {
+            listState.firstVisibleItemIndex > 0 ||
+                listState.firstVisibleItemScrollOffset > chromeScrollThresholdPx
+        }
+    }
+    LaunchedEffect(contentScrolled) { onContentScrolled(contentScrolled) }
     val homeScope = rememberCoroutineScope()
     val heroFocus = remember { FocusRequester() }
     val fallbackFocus = remember { FocusRequester() }

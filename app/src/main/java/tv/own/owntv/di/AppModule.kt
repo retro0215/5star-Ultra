@@ -60,7 +60,7 @@ val appModule = module {
     // Activity-scoped session state for the profile gate (configuration-only retention, no saved
     // state — see ProfileGateSessionViewModel).
     viewModelOf(::ProfileGateSessionViewModel)
-    // 23 constructor parameters — one past the highest arity Koin's `*Of` DSL generates, so this one
+    // 24 constructor parameters — past the highest arity Koin's `*Of` DSL generates, so this one
     // binding stays explicit. Named arguments give it the same guarantee viewModelOf gives the rest:
     // reordering the constructor is safe, and adding a parameter is a compile error here, not a
     // silently mis-wired dependency at runtime.
@@ -89,6 +89,7 @@ val appModule = module {
             stalkerClient = get(),
             xtreamClient = get(),
             companion = get(),
+            vodEngineStore = get(),
         )
     }
     viewModelOf(::HomeSettingsViewModel)

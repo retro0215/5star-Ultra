@@ -8,6 +8,19 @@ import kotlin.math.roundToInt
 /** The three browse sections that own a 3-panel layout (category rail · item list/grid · preview). */
 enum class PanelSection { LIVE, MOVIES, SERIES }
 
+/** Inset between the shared browse container edge and its columns. */
+val BrowseContainerPadding: Dp = 12.dp
+
+/** The mockup's spacing between each column, the divider, and the raised preview. */
+val BrowseColumnGap: Dp = 12.dp
+
+/** The category/list separator itself. */
+val BrowseColumnDividerSpace: Dp = 1.dp
+
+/** Non-content width inside the shared browse container. */
+fun browsePanelGapTotal(previewVisible: Boolean): Dp =
+    BrowseColumnDividerSpace + BrowseColumnGap * if (previewVisible) 3 else 2
+
 /**
  * Manual panel-width adjustment (per section, per panel).
  *
@@ -64,6 +77,7 @@ fun defaultPanelShares(
         PanelSection.MOVIES -> PanelShares(15, 65, 20)
         PanelSection.SERIES -> PanelShares(15, 65, 20)
     }
+
 }
 
 /**

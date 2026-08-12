@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -44,11 +45,16 @@ import tv.own.owntv.R
 import tv.own.owntv.features.settings.data.PanelSection
 import tv.own.owntv.features.settings.data.PanelShares
 import tv.own.owntv.features.settings.data.PanelWidthLimits
+import tv.own.owntv.features.settings.data.BrowseColumnGap
+import tv.own.owntv.features.settings.data.BrowseColumnDividerSpace
+import tv.own.owntv.features.settings.data.BrowseContainerPadding
 import tv.own.owntv.features.settings.data.defaultPanelShares
+import tv.own.owntv.ui.components.ContentPanelFill
 import tv.own.owntv.ui.components.FocusableSurface
 import tv.own.owntv.ui.components.OwnTVButton
 import tv.own.owntv.ui.components.OwnTVButtonStyle
 import tv.own.owntv.ui.components.OwnTVIcon
+import tv.own.owntv.ui.components.PreviewPanelFill
 import tv.own.owntv.ui.components.dialogPanel
 import tv.own.owntv.ui.components.modalScrim
 import tv.own.owntv.ui.components.roundedPanel
@@ -88,7 +94,7 @@ fun PanelWidthSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) 
     BackHandler { onBack() }
 
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
-        val rowWidth = maxWidth
+        val rowWidth = maxWidth - BrowseContainerPadding * 2
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -290,6 +296,9 @@ private fun PanelWidthDialog(
                     ) { draft = draft.copy(preview = it) }
 
                     Spacer(Modifier.height(10.dp))
+                    PanelWidthDiagram(draft)
+
+                    Spacer(Modifier.height(10.dp))
                     Row(
                         modifier = Modifier.fillMaxWidth().padding(horizontal = 2.dp),
                         verticalAlignment = Alignment.CenterVertically,
@@ -359,6 +368,53 @@ private fun PanelWidthDialog(
                 }
             }
             }
+        }
+    }
+}
+
+/** The browse layout users are sizing: one container, two plain columns, and a raised preview. */
+@Composable
+private fun PanelWidthDiagram(shares: PanelShares) {
+    val colors = OwnTVTheme.colors
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+                .height(46.dp)
+            .clip(RoundedCornerShape(12.dp))
+                .background(ContentPanelFill)
+            .padding(4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            Modifier
+                .weight(shares.category.toFloat())
+                .fillMaxHeight()
+                .clip(RoundedCornerShape(topStart = 8.dp, bottomStart = 8.dp))
+                .background(colors.onSurface.copy(alpha = 0.035f)),
+        )
+        Spacer(Modifier.width(BrowseColumnGap))
+        Box(
+            Modifier
+                .width(BrowseColumnDividerSpace)
+                .fillMaxHeight()
+                .padding(vertical = 2.dp)
+                .background(colors.outlineVariant.copy(alpha = 0.35f)),
+        )
+        Spacer(Modifier.width(BrowseColumnGap))
+        Box(
+            Modifier
+                .weight(shares.list.toFloat())
+                .fillMaxHeight(),
+        )
+        if (shares.preview != 0) {
+            Spacer(Modifier.width(BrowseColumnGap))
+            Box(
+                Modifier
+                    .weight(shares.preview.toFloat())
+                    .fillMaxHeight()
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(PreviewPanelFill),
+            )
         }
     }
 }

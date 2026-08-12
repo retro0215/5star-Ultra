@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
@@ -68,6 +69,7 @@ import tv.own.owntv.features.shell.components.PreviewPane
 import tv.own.owntv.features.shell.components.RailCategory
 import tv.own.owntv.features.shell.components.SettingsScreen
 import tv.own.owntv.features.shell.components.Sidebar
+import tv.own.owntv.features.shell.components.SolidAmbientBackdrop
 import tv.own.owntv.features.shell.components.TopBar
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
@@ -75,6 +77,7 @@ import androidx.compose.ui.res.stringResource
 import tv.own.owntv.ui.components.OwnTVIcon
 import tv.own.owntv.ui.theme.Dimens
 import tv.own.owntv.ui.theme.GlassSurface
+import tv.own.owntv.ui.theme.LocalContentScrolled
 import tv.own.owntv.ui.theme.LocalGlass
 import tv.own.owntv.ui.theme.OwnTVTheme
 import tv.own.owntv.ui.theme.ThemeMode
@@ -122,6 +125,9 @@ fun OwnTVShell(
     val railSelection = remember { mutableStateMapOf<MainSection, Int>() }
     val selectedRail = railSelection[selectedSection] ?: 0
     val categories = railCategoriesFor(selectedSection)
+    // Each destination reports whether content has passed the 8 dp threshold. Keying this state to
+    // the section prevents a scrolled screen from leaving the next destination's chrome condensed.
+    var contentScrolled by remember(selectedSection) { mutableStateOf(false) }
 
     val scope = rememberCoroutineScope()
     val sidebarFocus = remember { FocusRequester() }
@@ -143,6 +149,9 @@ fun OwnTVShell(
     val settingsRepo = koinInject<tv.own.owntv.features.settings.data.SettingsRepository>()
     val miniSizePct by settingsRepo.miniPlayerSizePct.collectAsStateWithLifecycle(initialValue = tv.own.owntv.player.MiniPlayerSize.DEFAULT)
     val miniPosName by settingsRepo.miniPlayerPosition.collectAsStateWithLifecycle(initialValue = tv.own.owntv.player.MiniPlayerPosition.DEFAULT.name)
+    val ambientGlowEnabled by settingsRepo.ambientGlowEnabled.collectAsStateWithLifecycle(initialValue = false)
+    val ambientGlowPulse by settingsRepo.ambientGlowPulse.collectAsStateWithLifecycle(initialValue = true)
+    val shellAnimationLevel by settingsRepo.animationLevel.collectAsStateWithLifecycle(initialValue = tv.own.owntv.ui.theme.AnimationLevel.FULL)
     val miniPos = tv.own.owntv.player.MiniPlayerPosition.fromName(miniPosName)
     val subtitleController = koinInject<tv.own.owntv.core.subtitles.SubtitleController>()
     val subtitleContext by subtitleController.current.collectAsStateWithLifecycle()
@@ -400,7 +409,11 @@ fun OwnTVShell(
     // between/around panels. Solid otherwise — the usual near-black base.
     val glass = LocalGlass.current
     val shellBase = if (glass.isGlassy(GlassSurface.PANELS) || glass.isGlassy(GlassSurface.SIDEBAR)) Color.Transparent else colors.background
+    // Keep the navigation plate aligned with the content below the same dynamic top bar: compact during
+    // normal browsing, and restored to the taller reservation while Audio Mode shows its player controls.
+    val shellTopBarHeight = if (playerMode == PlayerMode.AUDIO) Dimens.TopBarHeight else Dimens.TopBarCompactHeight
 
+    CompositionLocalProvider(LocalContentScrolled provides contentScrolled) {
     Box(modifier = modifier.fillMaxSize().background(shellBase)) {
       // Browse UI — hidden while the player is fullscreen (stays visible behind the docked mini-player).
       if (playerMode != PlayerMode.FULLSCREEN) {
@@ -425,6 +438,7 @@ fun OwnTVShell(
                 onSwitchProfile = onSwitchProfile,
                 selectedItemFocusRequester = sidebarFocus,
                 onFocused = { focusedLayer = ShellLayer.SIDEBAR },
+                topInset = shellTopBarHeight,
             )
 
             Column(
@@ -525,6 +539,7 @@ fun OwnTVShell(
                             )
                         }
                     } else null,
+                    leadingExtension = Dimens.SidebarWidthCollapsed,
                 )
                 Box(modifier = Modifier.weight(1f).fillMaxWidth().padding(start = 0.dp, end = 6.dp, bottom = 6.dp)) {
                     when {
@@ -583,6 +598,7 @@ fun OwnTVShell(
                             },
                             previewEnabled = playerMode == PlayerMode.NONE,
                             firstRowFocusRequester = homeFirstRowFocus,
+                            onContentScrolled = { contentScrolled = it },
                             modifier = Modifier.fillMaxSize(),
                         )
 
@@ -623,6 +639,7 @@ fun OwnTVShell(
                             previewEnabled = playerMode == PlayerMode.NONE,
                             restoreFocus = restoreFocus,
                             onRestored = { restoreFocus = false },
+                            onContentScrolled = { contentScrolled = it },
                             modifier = Modifier.fillMaxSize(),
                         )
 
@@ -631,6 +648,7 @@ fun OwnTVShell(
                             onChildFocused = { focusedLayer = ShellLayer.CONTENT },
                             restoreFocus = restoreFocus,
                             onRestored = { restoreFocus = false },
+                            onContentScrolled = { contentScrolled = it },
                             modifier = Modifier.fillMaxSize(),
                         )
 
@@ -672,6 +690,7 @@ fun OwnTVShell(
                             onAddEpg = { openEpgAdd = true; onSelectSection(MainSection.SETTINGS) },
                             restoreFocus = restoreFocus,
                             onRestored = { restoreFocus = false },
+                            onContentScrolled = { contentScrolled = it },
                             modifier = Modifier
                                 .fillMaxSize()
                                 .onFocusChanged { if (it.hasFocus) focusedLayer = ShellLayer.CONTENT }
@@ -714,6 +733,14 @@ fun OwnTVShell(
             }
           }
         }
+        // The solid-mode wizard aura is deliberately drawn after the opaque browse surfaces so it
+        // remains visible, exactly like the approved concept. It never intercepts input; fullscreen
+        // video and glass mode skip it entirely. Global Animations Off also freezes the slow pulse.
+        SolidAmbientBackdrop(
+            glowEnabled = ambientGlowEnabled,
+            pulseEnabled = ambientGlowPulse && shellAnimationLevel != tv.own.owntv.ui.theme.AnimationLevel.OFF,
+            modifier = Modifier.fillMaxSize(),
+        )
       }
 
       // Unobtrusive background-sync pill (bottom middle): visible while any catalog sync runs —
@@ -1004,6 +1031,7 @@ fun OwnTVShell(
                 )
             }
         }
+    }
     }
 }
 

@@ -92,13 +92,15 @@ internal fun ProgrammeStripCanvas(
     val gapPx = with(density) { 4.dp.toPx() }
     val padPx = with(density) { 10.dp.toPx() }
     val borderPx = with(density) { Dimens.FocusBorderWidth.toPx() }
+    val airingBarPx = with(density) { 3.dp.toPx() }
+    val airingBarInsetPx = with(density) { 4.dp.toPx() }
     val corner = with(density) { CornerRadius(10.dp.toPx(), 10.dp.toPx()) }
     val titleStyle = MaterialTheme.typography.titleSmall.copy(
         color = colors.onSurface,
         textDirection = TextDirection.Content,
     )
     val titleNowStyle = MaterialTheme.typography.titleSmall.copy(
-        color = colors.onPrimaryContainer,
+        color = colors.onSurface,
         textDirection = TextDirection.Content,
     )
     val timeStyle = MaterialTheme.typography.labelSmall.copy(
@@ -106,7 +108,7 @@ internal fun ProgrammeStripCanvas(
         textDirection = TextDirection.Content,
     )
     val timeNowStyle = MaterialTheme.typography.labelSmall.copy(
-        color = colors.onPrimaryContainer,
+        color = colors.onSurfaceVariant,
         textDirection = TextDirection.Content,
     )
     val formatTime = rememberSystemTimeFormatter()
@@ -151,8 +153,20 @@ internal fun ProgrammeStripCanvas(
             if (x + w <= 0f || x >= viewW) return@forEachIndexed // cull off-screen programmes
             val isNow = now in p.startMs until p.stopMs
             val hi = highlightTime != null && highlightTime in p.startMs until p.stopMs
-            val bg = when { hi -> colors.card; isNow -> colors.primaryContainer; else -> colors.surfaceContainerHigh }
+            val bg = when {
+                hi -> colors.card
+                isNow -> colors.primaryContainer.copy(alpha = 0.18f)
+                else -> colors.surfaceContainerHigh
+            }
             drawRoundRect(color = bg, topLeft = Offset(x, 0f), size = Size(w, h), cornerRadius = corner)
+            if (isNow) {
+                drawRoundRect(
+                    color = colors.primary,
+                    topLeft = Offset(x + airingBarInsetPx, airingBarInsetPx),
+                    size = Size(airingBarPx, (h - airingBarInsetPx * 2f).coerceAtLeast(0f)),
+                    cornerRadius = CornerRadius(airingBarPx / 2f, airingBarPx / 2f),
+                )
+            }
             if (hi) drawRoundRect(color = colors.focusBorder, topLeft = Offset(x, 0f), size = Size(w, h), cornerRadius = corner, style = Stroke(borderPx))
             val textW = (w - padPx * 2f).toInt()
             if (textW > 8) {
@@ -233,7 +247,7 @@ internal fun ProgrammeDetailDialog(
             val corner = if (compact) 16.dp else 20.dp
             Column(
                 Modifier.widthIn(max = if (compact) 400.dp else 560.dp).clip(RoundedCornerShape(corner))
-                    .glass(surface = GlassSurface.DIALOGS, baseFill = colors.surfaceContainerHigh, shape = RoundedCornerShape(corner), cornerRadius = corner)
+                    .glass(surface = GlassSurface.DIALOGS, baseFill = colors.surfaceContainerHigh, shape = RoundedCornerShape(corner))
                     .verticalScroll(rememberScrollState()).padding(if (compact) 18.dp else 28.dp),
             ) {
                 Text(channelName.uppercase(), style = MaterialTheme.typography.labelMedium, color = colors.primary, fontWeight = FontWeight.SemiBold)

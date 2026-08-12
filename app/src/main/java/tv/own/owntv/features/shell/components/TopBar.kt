@@ -4,11 +4,11 @@ import android.text.format.DateFormat
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.basicMarquee
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
@@ -25,7 +25,6 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -38,6 +37,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.layout.layout
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import kotlinx.coroutines.delay
@@ -46,7 +47,7 @@ import tv.own.owntv.core.weather.WeatherInfo
 import tv.own.owntv.ui.components.FocusableSurface
 import tv.own.owntv.ui.components.OwnTVIcon
 import tv.own.owntv.ui.theme.GlassSurface
-import tv.own.owntv.ui.theme.LocalGlass
+import tv.own.owntv.ui.theme.Dimens
 import tv.own.owntv.ui.theme.OwnTVTheme
 import tv.own.owntv.ui.theme.glass
 import tv.own.owntv.ui.theme.ownTvTween
@@ -56,11 +57,6 @@ import java.util.Date
 // big panels so the small chrome reads as glass without being heavy.
 private val TopBarChipCorner = 14.dp
 private const val TopBarFrost = 0.45f
-
-/** Always-on faint white glass edge for the display-only chips, only while the top bar is glassy. */
-@Composable
-private fun Modifier.topBarGlassRim(shape: Shape): Modifier =
-    if (LocalGlass.current.isGlassy(GlassSurface.TOPBAR)) border(1.dp, Color.White.copy(alpha = 0.18f), shape) else this
 
 @Composable
 fun TopBar(
@@ -80,13 +76,33 @@ fun TopBar(
     // Audio Mode (plan §8): the now-playing bar, shown left of the weather chip while PlayerMode.AUDIO
     // is active. Null = not in Audio Mode.
     audioBar: (@Composable () -> Unit)? = null,
+    // The shell reserves this width for its navigation rail. Extending into that reservation lets
+    // the top bar own the complete top strip while the rail itself begins below it.
+    leadingExtension: Dp = 0.dp,
     modifier: Modifier = Modifier,
 ) {
     val colors = OwnTVTheme.colors
+    // Audio Mode can expand into a two-line now-playing card and 36 dp transport control. Preserve the
+    // existing 48 dp strip for it; ordinary pills need only 40 dp, reclaiming 4 dp above and below.
+    val hasAudioBar = audioBar != null
+    val barHeight = if (hasAudioBar) Dimens.TopBarHeight else Dimens.TopBarCompactHeight
+    val verticalInset = if (hasAudioBar) 4.dp else 2.dp
     Row(
-        // Left padding = 0 so the section chip's left edge lines up with panel-1 (the category
-        // column) directly below it; keep the right inset for the weather/clock/playlist chips.
-        modifier = modifier.fillMaxWidth().padding(start = 0.dp, end = 20.dp, top = 4.dp, bottom = 4.dp),
+        modifier = modifier
+            .layout { measurable, constraints ->
+                val extensionPx = leadingExtension.roundToPx()
+                val expandedWidth = (constraints.maxWidth + extensionPx).coerceAtLeast(constraints.minWidth)
+                val placeable = measurable.measure(
+                    constraints.copy(minWidth = expandedWidth, maxWidth = expandedWidth),
+                )
+                layout(constraints.maxWidth, placeable.height) {
+                    placeable.placeRelative(-extensionPx, 0)
+                }
+            }
+            .fillMaxWidth()
+            .height(barHeight)
+            // The complete top strip follows the mockup's small screen-edge inset.
+            .padding(start = 10.dp, end = 20.dp, top = verticalInset, bottom = verticalInset),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
@@ -120,7 +136,7 @@ private fun SectionChip(label: String) {
     val colors = OwnTVTheme.colors
     // Keeps its accent tint (marks the current section) but frosts in glass mode like the other chips.
     val shape = RoundedCornerShape(TopBarChipCorner)
-    Box(Modifier.clip(shape).glass(GlassSurface.TOPBAR, colors.primaryContainer, shape, frostScale = TopBarFrost).topBarGlassRim(shape).padding(horizontal = 14.dp, vertical = 7.dp)) {
+    Box(Modifier.clip(shape).glass(GlassSurface.TOPBAR, colors.primaryContainer, shape, frostScale = TopBarFrost, condenseChrome = true).padding(horizontal = 14.dp, vertical = 7.dp)) {
         Text(label, style = MaterialTheme.typography.labelLarge, color = colors.onPrimaryContainer, fontWeight = FontWeight.Bold)
     }
 }
@@ -141,6 +157,7 @@ private fun SearchPill(onClick: () -> Unit, visible: Boolean) {
         surface = GlassSurface.TOPBAR,
         glassFrostScale = TopBarFrost,
         glassIdleRimAlpha = 0.18f,
+        glassCondensesWithContent = true,
         // Neutral when idle; accent fill only when focused (matches the playlist selector).
         focusedContainerColor = colors.primaryContainer,
         unfocusedContainerColor = colors.surfaceContainer.copy(alpha = 0.6f),
@@ -178,6 +195,7 @@ private fun ContinueChip(label: String, icon: OwnTVIcon, onClick: () -> Unit, vi
         surface = GlassSurface.TOPBAR,
         glassFrostScale = TopBarFrost,
         glassIdleRimAlpha = 0.18f,
+        glassCondensesWithContent = true,
         focusedContainerColor = colors.primary,
         unfocusedContainerColor = colors.primaryContainer.copy(alpha = 0.6f),
         contentAlignment = Alignment.Center,
@@ -216,7 +234,7 @@ private fun ClockChip() {
     // Display-only (non-focusable) and neutral (no accent), matching the weather chip. Frosts in
     // glass mode (TOPBAR surface) so it reads as glass like the focusable chips.
     val shape = RoundedCornerShape(TopBarChipCorner)
-    Box(Modifier.clip(shape).glass(GlassSurface.TOPBAR, colors.surfaceContainer.copy(alpha = 0.6f), shape, frostScale = TopBarFrost).topBarGlassRim(shape).padding(horizontal = 14.dp, vertical = 7.dp)) {
+    Box(Modifier.clip(shape).glass(GlassSurface.TOPBAR, colors.surfaceContainer.copy(alpha = 0.6f), shape, frostScale = TopBarFrost, condenseChrome = true).padding(horizontal = 14.dp, vertical = 7.dp)) {
         Text(formatted, style = MaterialTheme.typography.labelLarge, color = colors.onSurfaceVariant)
     }
 }
@@ -234,7 +252,7 @@ private fun PlaylistChip(
     if (!interactive) {
         // Neutral display-only badge (no always-on accent), frosts in glass mode like the other chips.
         val shape = RoundedCornerShape(TopBarChipCorner)
-        Box(Modifier.clip(shape).glass(GlassSurface.TOPBAR, colors.surfaceContainer.copy(alpha = 0.6f), shape, frostScale = TopBarFrost).topBarGlassRim(shape).padding(horizontal = 14.dp, vertical = 7.dp)) {
+        Box(Modifier.clip(shape).glass(GlassSurface.TOPBAR, colors.surfaceContainer.copy(alpha = 0.6f), shape, frostScale = TopBarFrost, condenseChrome = true).padding(horizontal = 14.dp, vertical = 7.dp)) {
             Text(label, style = MaterialTheme.typography.labelLarge, color = colors.onSurfaceVariant, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
         return
@@ -254,6 +272,7 @@ private fun PlaylistChip(
         surface = GlassSurface.TOPBAR,
         glassFrostScale = TopBarFrost,
         glassIdleRimAlpha = 0.18f,
+        glassCondensesWithContent = true,
         // Neutral when idle; accent fill only when focused (no always-on accent).
         focusedContainerColor = colors.primaryContainer,
         unfocusedContainerColor = colors.surfaceContainer.copy(alpha = 0.6f),
@@ -291,7 +310,7 @@ private fun WeatherChip(info: WeatherInfo, fahrenheit: Boolean) {
     }
     val location = if (info.city.isNotBlank()) stringResource(R.string.common_weather_city, temp, info.city) else temp
     val shape = RoundedCornerShape(TopBarChipCorner)
-    Box(Modifier.clip(shape).glass(GlassSurface.TOPBAR, colors.surfaceContainer.copy(alpha = 0.6f), shape, frostScale = TopBarFrost).topBarGlassRim(shape).padding(horizontal = 14.dp, vertical = 7.dp)) {
+    Box(Modifier.clip(shape).glass(GlassSurface.TOPBAR, colors.surfaceContainer.copy(alpha = 0.6f), shape, frostScale = TopBarFrost, condenseChrome = true).padding(horizontal = 14.dp, vertical = 7.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             WeatherConditionIcon(info = info, Modifier.size(16.dp))
             Text(location, style = MaterialTheme.typography.labelLarge, color = colors.onSurfaceVariant, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)

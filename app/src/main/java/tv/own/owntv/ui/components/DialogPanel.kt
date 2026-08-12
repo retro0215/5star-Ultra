@@ -46,16 +46,13 @@ fun Modifier.dialogPanel(
     val outline = OwnTVTheme.colors.outlineVariant.copy(alpha = 0.72f)
     val base = this
         .width(width)
-        .shadow(elevation = 16.dp, shape = shape, clip = false)
+        .shadow(elevation = if (glassy) 16.dp else 24.dp, shape = shape, clip = false)
         .clip(shape)
         .glass(
             surface = GlassSurface.DIALOGS,
             baseFill = fill ?: OwnTVTheme.colors.surfaceContainerHigh,
             shape = shape,
-            cornerRadius = corner,
         )
-        // DIALOGS glass already supplies the same 1dp/0.18 idle rim. Preserve the explicit border
-        // only for solid mode and avoid compositing the identical perimeter twice.
         .then(if (glassy) Modifier else Modifier.border(1.dp, outline, shape))
     // verticalScroll + a nested LazyColumn is an illegal same-direction nest; callers with an inner
     // LazyColumn pass scroll = false and cap the list height themselves.
@@ -66,6 +63,6 @@ fun Modifier.dialogPanel(
 @Composable
 fun Modifier.modalScrim(strength: Float = 1f): Modifier {
     val glassy = LocalGlass.current.isGlassy(GlassSurface.DIALOGS)
-    val alpha = (if (glassy) 0.42f else 0.58f) * strength.coerceIn(0f, 1.35f)
+    val alpha = (if (glassy) 0.30f else 0.58f) * strength.coerceIn(0f, 1.35f)
     return background(Color.Black.copy(alpha = alpha.coerceAtMost(0.72f)))
 }

@@ -353,6 +353,7 @@
     <string name="settings_hardware_decoding">Décodage matériel</string>
     <string name="settings_hardware_decoding_description">Utiliser le décodeur matériel du téléviseur. Désactivez cette option si certains flux saccadent ou présentent des artefacts.</string>
     <string name="settings_movies_series_player">Lecteur pour les films et les séries</string>
+    <string name="settings_reset_player_choices">Réinitialiser les choix de lecteur enregistrés</string>
     <string name="settings_external_player">Lecteur externe</string>
     <string name="settings_default_zoom">Zoom par défaut</string>
     <string name="settings_default_zoom_description">Format d’image/zoom appliqué au démarrage de la lecture.</string>
@@ -399,6 +400,15 @@
     <string name="settings_external_player_description">Choisissez les sections à ouvrir dans une application externe.</string>
     <string name="settings_audio_delay_value"><xliff:g id="delay">%1$d</xliff:g> ms</string>
     <string name="settings_movies_player_description">mpv (recommandé) offre la compatibilité la plus étendue avec les formats — audio DTS/TrueHD, fichiers inhabituels — ainsi qu’une correction de la synchronisation A/V. Passez à ExoPlayer uniquement si des films ou des épisodes ne démarrent pas : sur certains téléviseurs, il lit des flux que mpv ne peut pas lire, mais ne peut pas décoder l’audio DTS/TrueHD et ne dispose d’aucune correction de la synchronisation A/V. Quel que soit votre choix, l’autre lecteur est essayé automatiquement en cas d’échec.</string>
+    <string name="settings_reset_player_choices_description">Lorsque vous basculez un film ou un épisode précis entre mpv et ExoPlayer depuis le lecteur, ce choix est enregistré pour la prochaine fois. La réinitialisation fait de nouveau suivre le réglage ci-dessus à tout le contenu. Les choix enregistrés pour les chaînes en direct sont conservés.</string>
+    <string name="settings_reset_player_choices_none">Aucun enregistré</string>
+    <plurals name="settings_reset_player_choices_count">
+        <item quantity="one"><xliff:g id="count">%1$d</xliff:g> enregistré</item>
+        <item quantity="many"><xliff:g id="count">%1$d</xliff:g> enregistrés</item>
+        <item quantity="other"><xliff:g id="count">%1$d</xliff:g> enregistrés</item>
+    </plurals>
+    <string name="settings_reset_player_choices_confirm">Réinitialiser les choix de lecteur enregistrés ?</string>
+    <string name="settings_reset_player_choices_confirm_description">Chaque film et chaque épisode suit de nouveau le réglage « Lecteur pour les films et les séries ». Vous pouvez à tout moment rebasculer un élément précis depuis le lecteur.</string>
     <string name="settings_external_player_row_description">Ouvrez les flux dans une application externe (VLC, MX Player) plutôt que dans le lecteur intégré, avec un choix propre à chaque section. Utile pour les flux que cette application ne peut pas décoder, ou si vous préférez un autre lecteur. La position de reprise et les commandes précédent/suivant ne sont pas disponibles lors d’une lecture externe ; les flux nécessitant un User-Agent ou un en-tête Referer personnalisé risquent de ne pas être lus.</string>
     <string name="settings_resume_always">Toujours reprendre</string>
     <string name="settings_resume_ask">Demander avant de reprendre</string>
@@ -925,4 +935,20 @@
     <string name="settings_glass_preset_balanced_description">Clarté, profondeur et lisibilité recommandées.</string>
     <string name="settings_glass_preset_tinted_description">Couleur de surface renforcée pour les arrière-plans chargés ou lumineux.</string>
     <string name="settings_glass_preset_custom_description">Utilisez vos valeurs enregistrées de transparence et de flou.</string>
+    <string name="settings_ambient_glow">Halo ambiant</string>
+    <string name="settings_ambient_glow_description">Ajoute à l’interface opaque le halo de l’assistant de configuration</string>
+    <string name="settings_ambient_glow_dialog_description">Ajoute un doux halo d’accentuation à l’interface sans verre. La pulsation lente respire doucement lorsque les animations sont activées.</string>
+    <string name="settings_ambient_glow_effect">Halo</string>
+    <string name="settings_ambient_glow_pulse">Pulsation lente</string>
+    <string name="settings_glass_preset_ultra_clear">Ultra-clair</string>
+    <string name="settings_glass_preset_opaque">Opaque</string>
+    <string name="settings_glass_preset_ultra_clear_description">Détails maximum du fond avec un flou léger.</string>
+    <string name="settings_glass_preset_opaque_description">Densité maximale des panneaux avec le flou le plus intense.</string>
+    <string name="settings_glass_highlight_title">Intensité du reflet</string>
+    <string name="settings_glass_highlight_description">Ajustez la lumière et le contour du verre sélectionné.</string>
+    <string name="settings_glass_live_preview">Aperçu en direct</string>
+    <string name="settings_glass_full_transparency_title">Autoriser la transparence totale</string>
+    <string name="settings_glass_full_transparency_description">Désactive le seuil automatique de lisibilité pour un verre aussi clair que possible.</string>
+    <string name="settings_glass_depth_title">Profondeur et ombres</string>
+    <string name="settings_glass_depth_description">Active la lumière suivant le focus, la parallaxe subtile et le mouvement de profondeur.</string>
 </resources>

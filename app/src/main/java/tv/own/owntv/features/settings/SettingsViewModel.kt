@@ -80,6 +80,7 @@ class SettingsViewModel(
     private val stalkerClient: tv.own.owntv.core.stalker.StalkerClient,
     private val xtreamClient: tv.own.owntv.core.parser.XtreamClient,
     private val companion: tv.own.owntv.core.companion.CompanionController,
+    private val vodEngineStore: tv.own.owntv.core.player.VodEngineStore,
 ) : ViewModel() {
     companion object {
         private const val TAG = "OwnTVHome"
@@ -379,6 +380,18 @@ class SettingsViewModel(
     val vodPreferExo: StateFlow<Boolean> = settings.vodPreferExo.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
     fun setVodPreferExo(enabled: Boolean) { viewModelScope.launch { settings.setVodPreferExo(enabled) } }
 
+    /** How many movies/episodes are pinned to a specific engine — the row is only worth showing when
+     *  there is something to forget. Counts both directions: a pin to mpv and a pin to ExoPlayer both
+     *  override the setting above. */
+    val vodEnginePinCount: StateFlow<Int> =
+        combine(vodEngineStore.mpvUrls, vodEngineStore.exoUrls) { mpv, exo -> mpv.size + exo.size }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0)
+
+    /** Forget every per-item engine pin, so everything follows the "Movies & Series player" setting
+     *  again. Also the escape hatch for pins older builds wrote automatically after a decode failure —
+     *  those are stored identically to the user's own, so they can only be cleared wholesale. */
+    fun clearVodEnginePins() { viewModelScope.launch { vodEngineStore.clearAll() } }
+
     val measuredStreamStats: StateFlow<Boolean> = settings.measuredStreamStats.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), true)
     fun setMeasuredStreamStats(enabled: Boolean) { viewModelScope.launch { settings.setMeasuredStreamStats(enabled) } }
 
@@ -500,8 +513,19 @@ class SettingsViewModel(
     fun setBgImagePath(path: String) { viewModelScope.launch { settings.setBgImagePath(path) } }
     fun setGlassScopeBitmask(bits: Int) { viewModelScope.launch { settings.setGlassScopeBitmask(bits) } }
     fun setGlassPreset(preset: tv.own.owntv.ui.theme.GlassPreset) { viewModelScope.launch { settings.setGlassPreset(preset) } }
-    fun setGlassAlphaPercent(pct: Int) { viewModelScope.launch { settings.setGlassAlphaPercent(pct) } }
-    fun setGlassBlurPercent(pct: Int) { viewModelScope.launch { settings.setGlassBlurPercent(pct) } }
+    fun setGlassAlphaPercent(pct: Int, currentBlurPct: Int) {
+        viewModelScope.launch { settings.setGlassAlphaPercent(pct, currentBlurPct) }
+    }
+    fun setGlassBlurPercent(pct: Int, currentAlphaPct: Int) {
+        viewModelScope.launch { settings.setGlassBlurPercent(pct, currentAlphaPct) }
+    }
+    fun setGlassHighlightPercent(pct: Int) { viewModelScope.launch { settings.setGlassHighlightPercent(pct) } }
+    fun setGlassAllowFullTransparency(enabled: Boolean) {
+        viewModelScope.launch { settings.setGlassAllowFullTransparency(enabled) }
+    }
+    fun setGlassDepthEffects(enabled: Boolean) {
+        viewModelScope.launch { settings.setGlassDepthEffects(enabled) }
+    }
 
     // --- Nav menu customization (v4.3.0) ---
     /** STATIC (default): user picks which icons to hide. DYNAMIC: icons adapt to the active playlist. */
@@ -605,6 +629,14 @@ class SettingsViewModel(
     val animationLevel: StateFlow<tv.own.owntv.ui.theme.AnimationLevel> =
         settings.animationLevel.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), tv.own.owntv.ui.theme.AnimationLevel.FULL)
     fun setAnimationLevel(level: tv.own.owntv.ui.theme.AnimationLevel) { viewModelScope.launch { settings.setAnimationLevel(level) } }
+
+    val ambientGlowEnabled: StateFlow<Boolean> =
+        settings.ambientGlowEnabled.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
+    fun setAmbientGlowEnabled(enabled: Boolean) { viewModelScope.launch { settings.setAmbientGlowEnabled(enabled) } }
+
+    val ambientGlowPulse: StateFlow<Boolean> =
+        settings.ambientGlowPulse.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), true)
+    fun setAmbientGlowPulse(enabled: Boolean) { viewModelScope.launch { settings.setAmbientGlowPulse(enabled) } }
 
     // Weather chip: visibility toggle + manual location override (for VPN users).
     val weatherEnabled: StateFlow<Boolean> =

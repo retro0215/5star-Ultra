@@ -1,10 +1,13 @@
 package tv.own.owntv.ui.components
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -30,6 +33,7 @@ fun OwnTVButton(
     style: OwnTVButtonStyle = OwnTVButtonStyle.PRIMARY,
     icon: OwnTVIcon? = null,
     enabled: Boolean = true,
+    selected: Boolean = false,
     onLongClick: (() -> Unit)? = null,
     // Denser pill (tighter padding + smaller icon) for space-constrained popups like the storage picker.
     compact: Boolean = false,
@@ -48,21 +52,21 @@ fun OwnTVButton(
         onLongClick = onLongClick,
         modifier = modifier,
         enabled = enabled,
+        selected = selected,
         shape = shape,
         focusedScale = 1.012f,
         // M3 tonal: PRIMARY keeps the primary fill; SECONDARY is a tonal surface that lifts to the
         // primary container on focus.
         unfocusedContainerColor = if (primary) colors.primary else colors.card,
         focusedContainerColor = if (primary) colors.primary else colors.primaryContainer,
-        selectedContainerColor = if (primary) colors.primary else colors.card,
+        selectedContainerColor = if (primary || selected) colors.primary else colors.card,
         surface = surface,
         glassFrostScale = 0.9f,
-        glassCornerRadius = 28.dp,
         // Always-on glass edge so the pill reads as glass even when unfocused.
         glassIdleRimAlpha = 0.18f,
     ) { focused ->
         val contentColor = when {
-            primary -> colors.onPrimary
+            primary || (selected && !focused) -> colors.onPrimary
             focused -> colors.onPrimaryContainer
             else -> colors.textPrimary
         }
@@ -75,6 +79,9 @@ fun OwnTVButton(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(if (compact) 6.dp else 10.dp),
         ) {
+            if (selected) {
+                Box(Modifier.size(if (compact) 6.dp else 7.dp).background(contentColor, CircleShape))
+            }
             if (icon != null) {
                 OwnTVIcon(icon = icon, tint = contentColor, filled = true, modifier = Modifier.size(if (compact) 14.dp else 20.dp))
             }

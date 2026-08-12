@@ -39,6 +39,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
@@ -69,6 +70,10 @@ import tv.own.owntv.core.model.DownloadStatus
 import tv.own.owntv.features.live.LiveKey
 import tv.own.owntv.features.live.displayLabel
 import tv.own.owntv.features.settings.data.PanelSection
+import tv.own.owntv.features.settings.data.BrowseColumnGap
+import tv.own.owntv.features.settings.data.BrowseColumnDividerSpace
+import tv.own.owntv.features.settings.data.BrowseContainerPadding
+import tv.own.owntv.features.settings.data.browsePanelGapTotal
 import tv.own.owntv.features.settings.data.computePanelWidths
 import tv.own.owntv.features.settings.data.SettingsRepository
 import tv.own.owntv.features.settings.rememberPanelShares
@@ -112,6 +117,7 @@ fun MoviesScreen(
     onChildFocused: () -> Unit,
     restoreFocus: Boolean = false,
     onRestored: () -> Unit = {},
+    onContentScrolled: (Boolean) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val vm: MovieViewModel = koinViewModel()
@@ -209,6 +215,27 @@ fun MoviesScreen(
         if (!rememberMovies) { runCatching { gridState.scrollToItem(0) }; runCatching { listState.scrollToItem(0) } }
     }
     val catListState = rememberLazyListState()
+    val chromeScrollThresholdPx = with(LocalDensity.current) { 8.dp.roundToPx() }
+    val contentScrolled by remember(
+        effectiveGridState,
+        effectiveListState,
+        catListState,
+        viewMode,
+        chromeScrollThresholdPx,
+    ) {
+        androidx.compose.runtime.derivedStateOf {
+            val contentMoved = if (viewMode == SettingsRepository.VodViewMode.GRID) {
+                effectiveGridState.firstVisibleItemIndex > 0 ||
+                    effectiveGridState.firstVisibleItemScrollOffset > chromeScrollThresholdPx
+            } else {
+                effectiveListState.firstVisibleItemIndex > 0 ||
+                    effectiveListState.firstVisibleItemScrollOffset > chromeScrollThresholdPx
+            }
+            contentMoved || catListState.firstVisibleItemIndex > 0 ||
+                catListState.firstVisibleItemScrollOffset > chromeScrollThresholdPx
+        }
+    }
+    LaunchedEffect(contentScrolled) { onContentScrolled(contentScrolled) }
     var gridPaneFocused by remember { mutableStateOf(false) }
     var railPaneFocused by remember { mutableStateOf(false) }
     // Returning from the player: scroll to and focus the movie you just played (waits for the grid to load).
@@ -275,18 +302,30 @@ fun MoviesScreen(
         contextMovieIndex = -1
     }
 
-    // Manual panel widths (Settings → Panel Width Adjustment). Null = this section is at Default, and
-    // the three panels below keep their stock Dimens/weight() sizing.
+    // Manual panel widths (Settings → Panel Width Adjustment). The saved percentages now resolve
+    // against the inside of one shared content container; no stored value is rewritten.
     val panelShares = rememberPanelShares(PanelSection.MOVIES, settingsVm)
-    BoxWithConstraints(modifier = modifier.fillMaxSize()) {
-    val panels = panelShares?.let { computePanelWidths(it, maxWidth) }
-    Row(modifier = Modifier.fillMaxSize().onFocusChanged { if (it.hasFocus) onChildFocused() }, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+    BoxWithConstraints(
+        modifier = modifier
+            .fillMaxSize()
+            .roundedPanel(fillColor = ContentPanelFill)
+            .padding(BrowseContainerPadding)
+            .onFocusChanged { if (it.hasFocus) onChildFocused() },
+    ) {
+    val previewVisible = panelShares?.preview != 0
+    val innerGapTotal = browsePanelGapTotal(previewVisible)
+    val panels = panelShares?.let { computePanelWidths(it, maxWidth, innerGapTotal) }
+    Row(
+        modifier = Modifier
+            .fillMaxSize(),
+    ) {
         CategoryRail(
             width = panels?.category ?: Dimens.RailWidthFixed,
             categories = railItems.map { RailCategory(it.displayLabel(R.string.content_category_all_movies), it.icon, showGenreDot = it.key is LiveKey.Folder) },
             selectedIndex = selectedIndex,
             onSelect = { idx -> railItems.getOrNull(idx)?.let { vm.select(it.key) } },
             listState = catListState,
+            showPanel = false,
             modifier = Modifier
                 .onFocusChanged { railPaneFocused = it.hasFocus }
                 .chNavPaging(
@@ -300,11 +339,21 @@ fun MoviesScreen(
                 ),
         )
 
+        Spacer(Modifier.width(BrowseColumnGap))
+        Box(
+            Modifier
+                .width(BrowseColumnDividerSpace)
+                .fillMaxHeight()
+                .padding(vertical = 2.dp)
+                .background(OwnTVTheme.colors.outlineVariant.copy(alpha = 0.35f)),
+        )
+
+        Spacer(Modifier.width(BrowseColumnGap))
+
         Column(
             modifier = Modifier
                 .then(if (panels != null) Modifier.width(panels.list) else Modifier.weight(1.8f))
                 .fillMaxSize()
-                .roundedPanel(fillColor = ContentPanelFill)
                 .onFocusChanged { gridPaneFocused = it.hasFocus }
                 // CH+- key paging for this movies list/grid. currentTargetIndex falls back to the
                 // visible top when the selected movie isn't in the loaded window (paged data).
@@ -364,7 +413,6 @@ fun MoviesScreen(
                 // (landing on the top bar) — trap vertical exits; Left/Right/Back leave normally.
                 .trapVerticalFocusExit()
                 .focusGroup()
-                .padding(horizontal = Dimens.ScreenPaddingH, vertical = Dimens.ScreenPaddingV),
         ) {
             Text(stringResource(R.string.content_section_category, stringResource(R.string.common_nav_movies), selectedLabel), style = MaterialTheme.typography.headlineLarge, color = OwnTVTheme.colors.onSurface)
             Spacer(Modifier.height(4.dp))
@@ -472,13 +520,14 @@ fun MoviesScreen(
             }
         }
 
-        if (panelShares?.preview != 0) {
+        if (previewVisible) {
+            Spacer(Modifier.width(BrowseColumnGap))
             Box(
                 modifier = Modifier
                     .then(if (panels != null) Modifier.width(panels.preview) else Modifier.weight(1f))
                     .fillMaxSize()
                     .roundedPanel(fillColor = PreviewPanelFill)
-                    .padding(Dimens.GapLarge),
+                    .padding(BrowseContainerPadding),
             ) {
                 MovieDetailsPane(
                     movie = selectedMovie,

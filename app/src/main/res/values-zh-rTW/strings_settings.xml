@@ -351,6 +351,7 @@
     <string name="settings_hardware_decoding">硬體解碼</string>
     <string name="settings_hardware_decoding_description">使用電視的硬體解碼器。如果部分串流播放不順或出現影像瑕疵，請關閉此功能。</string>
     <string name="settings_movies_series_player">電影與影集播放器</string>
+    <string name="settings_reset_player_choices">重設已儲存的播放器選擇</string>
     <string name="settings_external_player">外部播放器</string>
     <string name="settings_default_zoom">預設縮放</string>
     <string name="settings_default_zoom_description">開始播放時套用的長寬比／縮放設定。</string>
@@ -397,6 +398,13 @@
     <string name="settings_external_player_description">選擇要在哪些區段中使用外部應用程式開啟內容。</string>
     <string name="settings_audio_delay_value"><xliff:g id="delay">%1$d</xliff:g> 毫秒</string>
     <string name="settings_movies_player_description">mpv（建議使用）支援最廣泛的格式，包括 DTS/TrueHD 音訊和特殊檔案，並提供音訊／視訊同步修正。只有電影或集數無法開始播放時才切換至 ExoPlayer：在特定電視上，它能播放部分 mpv 無法播放的串流，但無法解碼 DTS/TrueHD 音訊，也不提供音訊／視訊同步修正。無論選擇哪一個，若播放失敗，都會自動嘗試另一個播放器。</string>
+    <string name="settings_reset_player_choices_description">在播放器中將單一電影或影集在 mpv 與 ExoPlayer 之間切換後，該選擇會儲存下來供下次使用。重設後，所有內容會重新依照上方的設定。直播頻道已儲存的選擇會保留。</string>
+    <string name="settings_reset_player_choices_none">未儲存任何選擇</string>
+    <plurals name="settings_reset_player_choices_count">
+        <item quantity="other">已儲存 <xliff:g id="count">%1$d</xliff:g> 項</item>
+    </plurals>
+    <string name="settings_reset_player_choices_confirm">要重設已儲存的播放器選擇嗎？</string>
+    <string name="settings_reset_player_choices_confirm_description">所有電影與影集會重新依照「電影與影集播放器」設定。你隨時可以在播放器中再次個別切換某一項。</string>
     <string name="settings_external_player_row_description">依各區段所選的設定，使用外部應用程式（VLC、MX Player）而非內建播放器開啟串流。若本應用程式無法解碼某些串流，或您偏好其他播放器，此功能會很實用。使用外部播放器播放時，無法使用續播位置及上一個／下一個功能；需要自訂 User-Agent 或 referer 的串流可能無法播放。</string>
     <string name="settings_resume_always">一律繼續播放</string>
     <string name="settings_resume_ask">詢問是否繼續播放</string>
@@ -893,4 +901,20 @@
     <string name="settings_glass_preset_balanced_description">建議的清晰度、層次感與可讀性。</string>
     <string name="settings_glass_preset_tinted_description">為複雜或明亮背景提供更強的表面色彩。</string>
     <string name="settings_glass_preset_custom_description">使用已儲存的透明度與模糊值。</string>
+    <string name="settings_ambient_glow">環境光暈</string>
+    <string name="settings_ambient_glow_description">為純色介面加入設定精靈風格的光暈</string>
+    <string name="settings_ambient_glow_dialog_description">為非玻璃介面加入柔和的強調色光暈。啟用動畫時，慢速脈動會輕柔地呼吸。</string>
+    <string name="settings_ambient_glow_effect">光暈</string>
+    <string name="settings_ambient_glow_pulse">慢速脈動</string>
+    <string name="settings_glass_preset_ultra_clear">超清透</string>
+    <string name="settings_glass_preset_opaque">不透明</string>
+    <string name="settings_glass_preset_ultra_clear_description">以輕微霧化顯示最多桌布細節。</string>
+    <string name="settings_glass_preset_opaque_description">以最強霧化呈現最高面板密度。</string>
+    <string name="settings_glass_highlight_title">高光強度</string>
+    <string name="settings_glass_highlight_description">調整聚焦玻璃的光線與邊緣。</string>
+    <string name="settings_glass_live_preview">即時預覽</string>
+    <string name="settings_glass_full_transparency_title">允許完全透明</string>
+    <string name="settings_glass_full_transparency_description">關閉自動可讀性下限，以獲得最通透的玻璃效果。</string>
+    <string name="settings_glass_depth_title">深度與陰影</string>
+    <string name="settings_glass_depth_description">啟用焦點移動光效、輕微視差與深度動態。</string>
 </resources>

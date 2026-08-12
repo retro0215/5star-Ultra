@@ -36,24 +36,24 @@ class PanelWidthsTest {
     }
 
     @Test
-    fun `hidden third panel uses one gap and has exact zero width`() {
+    fun `hidden preview reserves divider and its two surrounding gaps`() {
         val widths = computePanelWidths(
             shares = PanelShares(category = 40, list = 60, preview = 0),
             total = 1_000.dp,
         )
 
         assertEquals(0f, widths.preview.value, 0f)
-        assertEquals(996f, widths.category.value + widths.list.value, 0.01f)
+        assertEquals(975f, widths.category.value + widths.list.value, 0.01f)
     }
 
     @Test
-    fun `visible third panel keeps two gaps`() {
+    fun `visible preview reserves divider and all three column gaps`() {
         val widths = computePanelWidths(
             shares = PanelShares(category = 20, list = 50, preview = 30),
             total = 1_000.dp,
         )
 
-        assertEquals(992f, widths.category.value + widths.list.value + widths.preview.value, 0.01f)
+        assertEquals(963f, widths.category.value + widths.list.value + widths.preview.value, 0.01f)
         assertTrue(widths.preview.value > 0f)
     }
 }

@@ -1,31 +1,39 @@
 # Changelog
 
-## v4.2.0 — unreleased
+## v4.2.0 — 2026-08-12
 
-### 🫧 Glass Effect material and focus overhaul — clearer presets, cleaner motion, lighter rendering
+### 🫧 Complete interface and Glass Effect upgrade — unified panels, clearer presets, cleaner focus
 
-- **Glass now has four appearance presets:** **Clear** (38% transparency / 62% frost), **Balanced**
-  (56% / 78%, the recommended default), **Tinted** (74% / 88%), and **Custom**, which keeps the
-  saved Transparency and Blur / Frost values. Changing either manual stepper automatically selects
-  Custom, while Reset restores Balanced with every glass surface enabled.
-- **The material responds to interaction instead of looking like one flat translucent layer.** Idle,
-  selected, focused, and pressed surfaces receive role-aware tint, directional edge light, a localized
-  focus lens, and restrained depth shading. Panels, sidebar, preview, dialogs, top bar, cards, list rows,
-  action buttons and the mini-player retain distinct readable strengths. Without a wallpaper, enabled
-  surfaces use an opaque ceramic-glass treatment instead of fake transparency over a flat background.
-- **Fixed dark focus plates trailing behind rapid D-pad navigation.** Full-width Settings rows, the main
-  sidebar, and Live/Movies/Series category rails now switch their moving glass fill immediately and avoid
-  the scale/shadow layer used by larger cards. Foreground colour can still ease, but the old row no longer
-  fades through the position it has just left.
-- **Glass navigation now does substantially less per-frame work.** Gradients and rim geometry are cached;
-  moving frost updates drawing without recomposing the surface; idle cards use a lightweight material;
-  duplicate panel/dialog borders are gone; and full backdrop frost is promoted only after focus settles,
-  while tint, lens and rim feedback remain immediate. The aligned backdrop stays correct while Settings
-  and category lists scroll.
-- **The new preset text and descriptions are available in all 24 packaged interface languages.** Existing
-  transparency/frost values migrate safely: values matching a preset adopt its name, while every other
-  combination remains Custom. Scope, preset, custom values and wallpaper continue to survive restarts and
-  backup/restore.
+- **Live TV, Movies and Series now use one rounded browse container.** Category, list/grid and raised
+  preview/poster regions sit inside the same surface with deliberate gaps and separators instead of three
+  competing background boxes. The Guide, Home, Settings and dialogs use the same surface language, while
+  saved per-section panel widths—including a hidden 0% preview/poster—continue to work.
+- **The navigation rail now has its own matching plate and a compact beacon selection.** The logo, menu and
+  profile stay aligned inside it; the top strip runs cleanly across the shell; and Search remains at the
+  left of the top-bar controls. Normal browsing uses a tighter top bar and rail start, expanding to the
+  roomier height only while Audio Mode shows its player controls.
+- **Glass now has six appearance choices:** **Ultra Clear** (24% tint / 35% frost), **Clear** (38% / 62%),
+  **Balanced** (56% / 78%, recommended), **Tinted** (74% / 88%), **Opaque** (92% / 100%), and **Custom**.
+  Transparency reaches 100%; Frost uses ten real blur levels; Highlight strength controls edge light; and
+  a live row/card/chip preview shows changes before the popup closes. Reset restores Balanced, 55%
+  Highlight strength and every glass surface.
+- **Adaptive readability and optional depth keep the clearest presets usable.** A legibility floor
+  strengthens floating/container material over bright wallpaper unless **Allow full transparency** is
+  enabled. **Depth & shadows** controls focus-arrival light, restrained wallpaper parallax and focus depth;
+  the global Animations Off setting disables that motion too.
+- **The solid interface received the same quality pass.** Panels now have cleaner tonal separation,
+  consistent edges and restrained shadows in light and dark themes. A separate **Ambient Glow** popup adds
+  an optional teal aura and optional slow pulse; it is off by default, the pulse appears only after Glow is
+  enabled, and the setting is hidden while Glass Effect is active.
+- **Focus no longer paints a second rounded layer over rows or drags dark shadows while scrolling.** The
+  shared idle/selected/focused/pressed ladder now applies consistently to list rows, buttons, settings,
+  navigation and browse rails in both solid and glass modes, without changing their hit area or D-pad path.
+- **The richer material stays lightweight during navigation.** Gradients and rim geometry are cached,
+  backdrop frost updates without recomposing each surface, idle cards use a lighter path, and full frost is
+  promoted only after focus settles. The aligned backdrop remains stable while content scrolls.
+- **All new controls and descriptions are available in every packaged interface language.** Glass scope,
+  preset, custom values, wallpaper, readability/depth choices and Ambient Glow survive restarts and are
+  included in backup/restore. Glass and Ambient Glow both remain opt-in for existing and new users.
 
 ### 🔤 Font customization — size the whole interface and choose separate main and popup fonts
 
@@ -108,10 +116,12 @@
   candidate fetch, indexed-catalog preparation, per-candidate movie/series matching, provider-season loading,
   enrichment and publishing. The same detailed stages and timing totals are available through the
   `TrendingRefreshWorker` / `TrendingRepository` logcat tags.
-- **The feature follows Home and metadata settings.** It is on by default, can be hidden or reordered from
-  **Settings → Home screen**, and runs only when Home is shown and metadata mode is **Provider + TMDB** or
-  **TMDB only**. The settings row explains when Trending is unavailable or below its four-item threshold.
-  The per-profile Home choice travels in backup/restore; fetched Trending snapshots and metadata do not.
+- **The feature follows Home and metadata settings.** It is on by default and has a dedicated On/Off option
+  in **Settings → Home screen**, separate from the reorderable Home cards. When enabled it is always the top
+  Home row; when disabled it is not shown. Its translated note explains that the row appears only when 4–10
+  TMDB trends match playable movies or series in the provider catalogue. Metadata mode must be **Provider +
+  TMDB** or **TMDB only**. The per-profile choice travels in backup/restore; fetched snapshots and metadata
+  do not.
 - **Existing data upgrades in place.** Room migrations add the atomic Trending snapshot, item and indexed
   provider-title structures without rebuilding playlists, favourites, history, progress or customizations.
   All new interface text is translated across every packaged OwnTV language.
@@ -178,6 +188,17 @@
 
 ### 🐛 Fixes
 
+- **Your Movies & Series player choice is no longer overridden after a few failed streams.** Once three
+  items in a row had fallen back from ExoPlayer to mpv, OwnTV switched the rest of the session to mpv —
+  and a run of dead links counted exactly as much as a file this TV genuinely cannot decode, so on a
+  large public playlist the setting could be retired within a minute of browsing. A decode failure also
+  saved a permanent, invisible player choice for that item. Both behaviours are gone: every movie and
+  episode now starts on the engine you picked, every time, and only that one playback falls back if it
+  actually fails. Live TV already rebuilt its full engine ladder for every channel and is unchanged.
+- **New — Settings → Video Player → Reset saved player choices.** Switching a single movie or episode
+  between mpv and ExoPlayer inside the player still saves that choice, for that one item only. Because
+  older builds could also write such choices automatically, this row shows how many are stored and
+  clears them all in one step; saved choices for live channels are kept.
 - **Switching audio language mid-playback no longer makes the sound stutter.** On soundtracks the TV
   decodes itself — Dolby Digital, DTS and similar, passed through untouched — choosing a different
   language left the audio output half-restarted, and the sound snapped and skipped for the rest of the

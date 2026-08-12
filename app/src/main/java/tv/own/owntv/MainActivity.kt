@@ -23,6 +23,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -47,9 +48,12 @@ import tv.own.owntv.features.setup.Onboarding
 import tv.own.owntv.features.shell.OwnTVShell
 import tv.own.owntv.features.shell.ShellViewModel
 import tv.own.owntv.ui.theme.BlurredBackdrop
+import tv.own.owntv.ui.theme.BackdropLuminanceMap
 import tv.own.owntv.ui.theme.GlassConfig
+import tv.own.owntv.ui.theme.GlassMotionState
 import tv.own.owntv.ui.theme.LocalBlurredBackdrop
 import tv.own.owntv.ui.theme.LocalGlass
+import tv.own.owntv.ui.theme.LocalGlassMotion
 import tv.own.owntv.ui.theme.LocalUiFontScaleFactor
 import tv.own.owntv.ui.theme.OwnTVTheme
 import tv.own.owntv.ui.theme.UiFontScale
@@ -315,19 +319,33 @@ class MainActivity : ComponentActivity() {
                 // backdrop stands in for. Captured here (top of the tree) so glass panels can map their
                 // own on-screen rect into the blurred bitmap's coordinate space.
                 var rootSizePx by remember { mutableStateOf(Size.Zero) }
+                val glassMotionScope = rememberCoroutineScope()
+                val glassMotion = remember(glassMotionScope) { GlassMotionState(glassMotionScope) }
+                LaunchedEffect(glassActive, effectiveGlass.depthEffects, animationLevel) {
+                    glassMotion.setEnabled(
+                        glassActive && effectiveGlass.depthEffects &&
+                            animationLevel == tv.own.owntv.ui.theme.AnimationLevel.FULL,
+                    )
+                }
                 // Phase 4 — real backdrop blur. Load+blur the background once (cached) when glass is on,
                 // a background image is set, blur strength > 0, and the device supports it (API 31+).
                 // Otherwise this stays null and panels fall back to Tier-1 translucency.
-                val canBlur = glassActive && effectiveGlass.blurStrength > 0f &&
-                    bgImagePath.isNotBlank() && supportsBackdropBlur()
-                val blurred by produceState<BlurredBackdrop?>(initialValue = null, bgImagePath, canBlur, rootSizePx) {
-                    if (!canBlur || rootSizePx.width <= 0f || rootSizePx.height <= 0f) {
+                val needsBackdropAssets = glassActive && bgImagePath.isNotBlank()
+                val supportsFrostPyramid = supportsBackdropBlur()
+                val blurred by produceState<BlurredBackdrop?>(
+                    initialValue = null,
+                    bgImagePath,
+                    needsBackdropAssets,
+                    supportsFrostPyramid,
+                    rootSizePx,
+                ) {
+                    if (!needsBackdropAssets || rootSizePx.width <= 0f || rootSizePx.height <= 0f) {
                         value = null
                         return@produceState
                     }
                     // Decode + blur on a background dispatcher; never block the main thread.
                     val path = bgImagePath
-                    value = produceBlurredBackdrop(path, rootSizePx)
+                    value = produceBlurredBackdrop(path, rootSizePx, supportsFrostPyramid)
                 }
                 CompositionLocalProvider(
                     LocalDensity provides Density(
@@ -336,6 +354,7 @@ class MainActivity : ComponentActivity() {
                     ),
                     LocalUiFontScaleFactor provides UiFontScale.factor(fontCustomization.sizePercent),
                     LocalGlass provides effectiveGlass,
+                    LocalGlassMotion provides glassMotion,
                     LocalBlurredBackdrop provides blurred,
                 ) {
                     // Wrap the shell in the locale locals (LocalResources/LocalContext/
@@ -347,7 +366,10 @@ class MainActivity : ComponentActivity() {
                         modifier = Modifier.fillMaxSize()
                             // Solid base color first (fallback if no image / image fails to load).
                             .background(OwnTVTheme.colors.background)
-                            .onGloballyPositioned { rootSizePx = Size(it.size.width.toFloat(), it.size.height.toFloat()) },
+                            .onGloballyPositioned {
+                                rootSizePx = Size(it.size.width.toFloat(), it.size.height.toFloat())
+                                glassMotion.setRootSize(rootSizePx, base.density * UiZoom.factor(uiZoomPercent))
+                            },
                     ) {
                         // Background image sits behind everything when a path is set; otherwise the solid
                         // base color shows through and glass renders over that instead.
@@ -484,7 +506,11 @@ private fun BackgroundLayer(path: String) {
  * callers fall back to Tier-1 translucency. The aspect ratio is locked to the screen's so the slice
  * drawn under each panel lines up with the sharp photo behind it (Coil renders that with Crop/Center).
  */
-private suspend fun produceBlurredBackdrop(path: String, rootSizePx: Size): BlurredBackdrop? =
+private suspend fun produceBlurredBackdrop(
+    path: String,
+    rootSizePx: Size,
+    buildFrostPyramid: Boolean,
+): BlurredBackdrop? =
     withContext(Dispatchers.Default) {
         runCatching {
             val rootW = rootSizePx.width.takeIf { it > 0f } ?: return@runCatching null
@@ -495,9 +521,10 @@ private suspend fun produceBlurredBackdrop(path: String, rootSizePx: Size): Blur
             // ~8MB ARGB, ~9× fewer pixels through the CPU blur, and the same radius yields a much
             // deeper frost. (Full-res was a workaround for RGB blocks later proven to be a StackBlur
             // sign-wrap bug, since fixed — the upscale was never the culprit.)
-            // Frost is intentionally low-frequency. A 512–768 px texture is visually equivalent once
-            // blurred/upscaled, while cutting bitmap memory, CPU blur work and repeated GPU sampling.
-            val targetW = (rootW / 2.5f).toInt().coerceIn(512, 768)
+            // Frost is intentionally low-frequency. A 384–448 px base plus geometric smaller mips is
+            // visually equivalent once upscaled while staying below the former 512–768 px allocation.
+            val memoryCap = if (Runtime.getRuntime().maxMemory() >= 256L * 1024L * 1024L) 448 else 384
+            val targetW = (rootW / 4f).toInt().coerceIn(384, memoryCap)
             val targetH = (targetW / aspect).toInt().coerceAtLeast(2)
 
             // Decode bounds first, then sample down to roughly the target width.
@@ -530,24 +557,87 @@ private suspend fun produceBlurredBackdrop(path: String, rootSizePx: Size): Blur
                     val cropped = Bitmap.createBitmap(decoded, cx, cy, cw.coerceAtLeast(2), ch.coerceAtLeast(2))
                     if (cropped !== decoded) { decoded.recycle(); src = cropped }
                 }
-                // Downscale + pre-process in one canvas pass. A mild saturation lift keeps the blurred
-                // wallpaper from looking milky; the shell's lightweight scrim is rendered separately.
+                // Downscale + diffuse in one canvas pass. Compressing contrast 18% toward mid-grey
+                // prevents bright wallpaper patches punching through frost; the restrained saturation
+                // keeps colour identity without restoring the glare. This replaces the previous 1.18
+                // saturation-only filter at exactly the same one-off wallpaper-load cost.
+                val contrast = 0.82f
+                val translation = 255f * (1f - contrast) * 0.5f
+                val diffuse = android.graphics.ColorMatrix(
+                    floatArrayOf(
+                        contrast, 0f, 0f, 0f, translation,
+                        0f, contrast, 0f, 0f, translation,
+                        0f, 0f, contrast, 0f, translation,
+                        0f, 0f, 0f, 1f, 0f,
+                    ),
+                ).apply {
+                    postConcat(android.graphics.ColorMatrix().apply { setSaturation(1.06f) })
+                }
                 val scaled = Bitmap.createBitmap(targetW, targetH, Bitmap.Config.ARGB_8888)
                 android.graphics.Canvas(scaled).apply {
                     val paint = android.graphics.Paint(android.graphics.Paint.FILTER_BITMAP_FLAG).apply {
-                        colorFilter = android.graphics.ColorMatrixColorFilter(
-                            android.graphics.ColorMatrix().apply { setSaturation(1.18f) },
-                        )
+                        colorFilter = android.graphics.ColorMatrixColorFilter(diffuse)
                     }
                     drawBitmap(src, null, android.graphics.Rect(0, 0, targetW, targetH), paint)
                 }
                 src.recycle()
-                stackBlur(scaled, radius = 10).asImageBitmap()
+                val luminance = buildBackdropLuminanceMap(scaled)
+                val levels = if (buildFrostPyramid) {
+                    buildFrostMipPyramid(scaled)
+                } else {
+                    scaled.recycle()
+                    emptyList()
+                }
+                BlurredBackdrop(
+                    frostLevels = levels,
+                    luminance = luminance,
+                    rootSizePx = rootSizePx,
+                )
             } catch (t: Throwable) {
                 Log.w(BG_TAG, "blur: crop/scale/blur threw ${t.javaClass.simpleName}: ${t.message}")
                 decoded.recycle()
                 null
             }
         }.onFailure { Log.w(BG_TAG, "blur: produceState failed: ${it.javaClass.simpleName}: ${it.message}") }
-            .getOrNull()?.let { BlurredBackdrop(it, rootSizePx) }
+            .getOrNull()
     }
+
+/** Ten real blur levels at geometrically shrinking resolutions within one small memory budget. */
+private fun buildFrostMipPyramid(base: Bitmap): List<androidx.compose.ui.graphics.ImageBitmap> {
+    val result = ArrayList<androidx.compose.ui.graphics.ImageBitmap>(10)
+    val dimensions = tv.own.owntv.ui.theme.frostMipDimensions(base.width, base.height)
+    var current = stackBlur(base, radius = 4)
+    dimensions.forEachIndexed { level, _ ->
+        result += current.asImageBitmap()
+        if (level < dimensions.lastIndex) {
+            val (nextW, nextH) = dimensions[level + 1]
+            val next = Bitmap.createScaledBitmap(current, nextW, nextH, true)
+            current = stackBlur(next, radius = 2)
+        }
+    }
+    return result
+}
+
+/** 32×18 wallpaper luminance cache; each surface later mean-samples only 16 floats. */
+private fun buildBackdropLuminanceMap(bitmap: Bitmap): BackdropLuminanceMap {
+    val columns = 32
+    val rows = 18
+    val values = FloatArray(columns * rows)
+    fun linear(channel: Int): Float {
+        val value = channel / 255f
+        return if (value <= 0.04045f) value / 12.92f
+        else Math.pow(((value + 0.055f) / 1.055f).toDouble(), 2.4).toFloat()
+    }
+    repeat(rows) { y ->
+        val py = (((y + 0.5f) / rows) * bitmap.height).toInt().coerceIn(0, bitmap.height - 1)
+        repeat(columns) { x ->
+            val px = (((x + 0.5f) / columns) * bitmap.width).toInt().coerceIn(0, bitmap.width - 1)
+            val color = bitmap.getPixel(px, py)
+            values[y * columns + x] =
+                0.2126f * linear(android.graphics.Color.red(color)) +
+                0.7152f * linear(android.graphics.Color.green(color)) +
+                0.0722f * linear(android.graphics.Color.blue(color))
+        }
+    }
+    return BackdropLuminanceMap(columns, rows, values)
+}

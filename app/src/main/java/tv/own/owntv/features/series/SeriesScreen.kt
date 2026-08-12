@@ -70,6 +70,10 @@ import tv.own.owntv.core.model.DownloadStatus
 import tv.own.owntv.features.live.LiveKey
 import tv.own.owntv.features.live.displayLabel
 import tv.own.owntv.features.settings.data.PanelSection
+import tv.own.owntv.features.settings.data.BrowseColumnGap
+import tv.own.owntv.features.settings.data.BrowseColumnDividerSpace
+import tv.own.owntv.features.settings.data.BrowseContainerPadding
+import tv.own.owntv.features.settings.data.browsePanelGapTotal
 import tv.own.owntv.features.settings.data.computePanelWidths
 import tv.own.owntv.features.settings.data.SettingsRepository
 import tv.own.owntv.features.settings.rememberPanelShares
@@ -361,18 +365,30 @@ private fun SeriesGrid(
         contextSeriesIndex = -1
     }
 
-    // Manual panel widths (Settings → Panel Width Adjustment). Null = this section is at Default, and
-    // the three panels below keep their stock Dimens/weight() sizing.
+    // Manual panel widths (Settings → Panel Width Adjustment). The saved percentages now resolve
+    // against the inside of one shared content container; no stored value is rewritten.
     val panelShares = rememberPanelShares(PanelSection.SERIES, settingsVm)
-    BoxWithConstraints(modifier = modifier.fillMaxSize()) {
-    val panels = panelShares?.let { computePanelWidths(it, maxWidth) }
-    Row(modifier = Modifier.fillMaxSize().onFocusChanged { if (it.hasFocus) onChildFocused() }, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+    BoxWithConstraints(
+        modifier = modifier
+            .fillMaxSize()
+            .roundedPanel(fillColor = ContentPanelFill)
+            .padding(BrowseContainerPadding)
+            .onFocusChanged { if (it.hasFocus) onChildFocused() },
+    ) {
+    val previewVisible = panelShares?.preview != 0
+    val innerGapTotal = browsePanelGapTotal(previewVisible)
+    val panels = panelShares?.let { computePanelWidths(it, maxWidth, innerGapTotal) }
+    Row(
+        modifier = Modifier
+            .fillMaxSize(),
+    ) {
         CategoryRail(
             width = panels?.category ?: Dimens.RailWidthFixed,
             categories = railItems.map { RailCategory(it.displayLabel(R.string.content_category_all_series), it.icon, showGenreDot = it.key is LiveKey.Folder) },
             selectedIndex = selectedIndex,
             onSelect = { idx -> railItems.getOrNull(idx)?.let { vm.select(it.key) } },
             listState = catListState,
+            showPanel = false,
             modifier = Modifier
                 .onFocusChanged { railPaneFocused = it.hasFocus }
                 .chNavPaging(
@@ -386,11 +402,21 @@ private fun SeriesGrid(
                 ),
         )
 
+        Spacer(Modifier.width(BrowseColumnGap))
+        Box(
+            Modifier
+                .width(BrowseColumnDividerSpace)
+                .fillMaxHeight()
+                .padding(vertical = 2.dp)
+                .background(OwnTVTheme.colors.outlineVariant.copy(alpha = 0.35f)),
+        )
+
+        Spacer(Modifier.width(BrowseColumnGap))
+
         Column(
             modifier = Modifier
                 .then(if (panels != null) Modifier.width(panels.list) else Modifier.weight(1.8f))
                 .fillMaxSize()
-                .roundedPanel(fillColor = ContentPanelFill)
                 .onFocusChanged { gridPaneFocused = it.hasFocus }
                 .chNavPaging(
                     enabled = chNavEnabled,
@@ -445,7 +471,6 @@ private fun SeriesGrid(
                 // (landing on the top bar) — trap vertical exits; Left/Right/Back leave normally.
                 .trapVerticalFocusExit()
                 .focusGroup()
-                .padding(horizontal = Dimens.ScreenPaddingH, vertical = Dimens.ScreenPaddingV),
         ) {
             Text(stringResource(R.string.content_section_category, stringResource(R.string.common_nav_series), selectedLabel), style = MaterialTheme.typography.headlineLarge, color = OwnTVTheme.colors.onSurface)
             Spacer(Modifier.height(4.dp))
@@ -535,13 +560,14 @@ private fun SeriesGrid(
             }
         }
 
-        if (panelShares?.preview != 0) {
+        if (previewVisible) {
+            Spacer(Modifier.width(BrowseColumnGap))
             Box(
                 modifier = Modifier
                     .then(if (panels != null) Modifier.width(panels.preview) else Modifier.weight(1f))
                     .fillMaxSize()
                     .roundedPanel(fillColor = PreviewPanelFill)
-                    .padding(Dimens.GapLarge),
+                    .padding(BrowseContainerPadding),
             ) {
                 val s = selectedSeries
                 if (s == null) {
@@ -1387,23 +1413,24 @@ private fun EpisodeRow(
         Column(modifier = Modifier.fillMaxWidth()) {
             Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
                 Box(
-                    modifier = Modifier.size(34.dp).clip(RoundedCornerShape(8.dp)).background(if (completed) colors.primaryContainer else colors.surfaceContainerLowest),
+                    modifier = Modifier.size(34.dp).clip(RoundedCornerShape(8.dp)).background(if (focused || completed) colors.primaryContainer else colors.surfaceContainerLowest),
                     contentAlignment = Alignment.Center,
                 ) {
                     if (completed) {
                         Text("✓", style = MaterialTheme.typography.titleMedium, color = colors.onPrimaryContainer)
                     } else {
-                        Text(localizedInteger(episode.episodeNumber, grouping = false), style = MaterialTheme.typography.labelLarge, color = colors.onSurfaceVariant)
+                        Text(localizedInteger(episode.episodeNumber, grouping = false), style = MaterialTheme.typography.labelLarge, color = if (focused) colors.onPrimaryContainer else colors.onSurfaceVariant)
                     }
                 }
                 Text(
                     displayTitle,
                     style = MaterialTheme.typography.titleMedium,
                     color = when {
-                        focused -> colors.primary
+                        focused -> colors.onSurface
                         completed -> colors.onSurfaceVariant
                         else -> colors.onSurface
                     },
+                    fontWeight = if (focused) FontWeight.Medium else FontWeight.Normal,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f),
@@ -1420,7 +1447,8 @@ private fun EpisodeRow(
             }
             // Part-watched: a thin progress bar hugging the row's bottom edge (track + fill).
             if (progressFraction != null) {
-                Box(modifier = Modifier.fillMaxWidth().height(2.dp).background(colors.surfaceContainerLowest)) {
+                Box(modifier = Modifier.fillMaxWidth().height(2.dp), contentAlignment = Alignment.CenterStart) {
+                    Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(colors.onSurface.copy(alpha = 0.18f)))
                     Box(modifier = Modifier.fillMaxWidth(progressFraction).height(2.dp).background(colors.primary))
                 }
             }

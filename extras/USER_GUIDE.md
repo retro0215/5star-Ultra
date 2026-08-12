@@ -165,9 +165,10 @@ or **narrow the whole app to just one**.
   one of the four main actions and continues on the three navigation controls unless you manually pause it.
   Moving inside Trending never scrolls the Home page; Up/Down scroll only when focus crosses to another row.
 - **When it appears:** Trending is enabled by default and requires Home to be shown plus **Provider + TMDB**
-  or **TMDB only** under **Settings → Metadata (TMDB)**. Hide, show or reorder it under **Settings → Home
-  screen**. That settings row explains if a completed build found fewer than four playable matches. The Home
-  setting is included in backup/restore, but downloaded Trending results are rebuilt after sync and are not.
+  or **TMDB only** under **Settings → Metadata (TMDB)**. Its separate **Settings → Home screen → Now
+  Trending** option turns it On/Off; it is always the first Home row when enabled and disappears when off.
+  The note explains that 4–10 items are shown only when TMDB trends match playable movies or series in your
+  provider catalogue. The per-profile choice is included in backup/restore, but downloaded results are not.
 - **Watch a Trending build:** during a catalogue sync, the bottom status pill can use a second line for the
   candidate fetch, provider-title preparation, movie/series matching, season loading and final publishing.
   It disappears when the build completes, like the normal sync status.
@@ -184,8 +185,9 @@ or **narrow the whole app to just one**.
 - ▶️ **"Continue" chip (top bar, every screen):** a compact chip resumes your **most‑recent** item in one
   press — **Resume** a movie, **Next up** an episode, or your **Last channel** — labelled with the title.
   Reach it from the navigation panel (like the search pill); it hides when there's nothing to resume.
-- 🧩 **Make Home yours (Settings → Home screen, per profile):** **reorder or hide every row**, **filter the
-  Keep Watching hero** (include/exclude live channels, movies, series), and switch the live‑channel rows
+- 🧩 **Make Home yours (Settings → Home screen, per profile):** use the separate **Now Trending** On/Off
+  option, **reorder or hide the other Home rows**, **filter the Keep Watching hero** (include/exclude live
+  channels, movies, series), and switch the live‑channel rows
   between **Cards** and **On Now** — an inline mini‑guide showing what's airing now with a progress bar and
   the next hours (Up/Down picks a channel, Left/Right scrolls the timeline, OK tunes). The **Android TV
   home** toggle also lives on this page. Your layout is saved per profile and included in backups.
@@ -420,9 +422,9 @@ or **narrow the whole app to just one**.
 - 🔧 **Two playback engines with automatic fallback**: movies/episodes play on **mpv** by default (or
   **ExoPlayer** if you switched the **Movies & Series player** setting). If the chosen engine can't play an
   item, the **other engine is tried automatically** before any error. Each engine is given both its
-  hardware and its software decoder before the other is tried, so a video gets four chances in all. If an
-  item keeps failing on your preferred engine for a decoding reason, it is remembered and opens on the
-  other one from then on. You can also switch the **current**
+  hardware and its software decoder before the other is tried, so a video gets four chances in all. A
+  fallback is **never remembered** — the next item, and the same item next time, always starts on the
+  engine you chose. You can also switch the **current**
   movie/episode manually: bring up the controls and press the **engine toggle (the ⇄ MPV/EXO pill)** — it
   flips between mpv and ExoPlayer at the same position (the pill shows the active engine; teal while on
   ExoPlayer, and a small "Switched to MPV/ExoPlayer" note confirms it). Handy when one engine doesn't show a
@@ -673,12 +675,19 @@ For **movies and series episodes** (streamed or downloaded), the player's **Subt
     and continue, or **Back** to stay at 85%.
 - **Settings → Glass Effect**: a **frosted‑glass look** — panels turn translucent with a
   real blurred backdrop over an optional **background photo**.
-  - Choose an **Appearance preset**: **Clear** shows more wallpaper (38% transparency / 62% frost),
-    **Balanced** is the recommended mix (56% / 78%), and **Tinted** gives stronger surface colour
-    (74% / 88%). **Custom** uses your saved manual values. Changing either stepper selects Custom;
-    **Reset** restores Balanced and enables every glass surface.
+  - Choose an **Appearance preset** from the six-step clarity ladder: **Ultra Clear** (24% tint / 35%
+    frost), **Clear** (38% / 62%), **Balanced** (56% / 78%), **Tinted** (74% / 88%), **Opaque**
+    (92% / 100%), or **Custom** for saved manual values. Changing Transparency or Frost selects
+    Custom; **Reset** restores Balanced, 55% Highlight strength, and every glass surface.
   - The dialog also has **Glass effect On/Off**, a **Background image** chooser, a **Transparency**
-    stepper (20–95%, higher = more solid), a **Blur / Frost** stepper (0–100%), and a **Surfaces** menu.
+    stepper (20–100%, higher = more solid), a **Blur / Frost** stepper (0–100%), a **Highlight
+    strength** stepper (0–100%), a live row/card/chip preview, and a **Surfaces** menu. Frost uses ten
+    real blur levels rather than changing only opacity.
+  - The readability floor automatically strengthens floating and container glass over bright or busy
+    wallpaper. **Allow full transparency** disables that protection when the clearest look matters more
+    than guaranteed text contrast.
+  - **Depth & shadows** controls the short focus-arrival light, subtle wallpaper parallax and focus depth
+    movement. The main **Animations** setting also disables all of this motion when Animations is Off.
   - **Background image — Local or Remote.** **Local** browses USB/device storage for a JPG/PNG/WebP/BMP
     (it's copied into the app, so unplugging the stick can't blank it). **Remote** shows a **PIN + QR** —
     scan it with your phone on the same Wi‑Fi, enter the PIN, send a photo, and it applies instantly.
@@ -692,6 +701,14 @@ For **movies and series episodes** (streamed or downloaded), the player's **Subt
     glass rim immediately. During rapid scrolling OwnTV keeps the moving highlight lightweight, then adds
     the full frost after focus settles, avoiding the dark trailing bands older builds could leave behind.
     All glass settings are kept in backups.
+- **Settings → Ambient Glow** (shown only while Glass Effect is off): optionally adds the setup wizard's
+  soft teal aura to the normal solid interface. Glow is off by default. After turning it on, a separate
+  **Slow pulse** option appears so the aura can remain still or breathe gently; Animations Off freezes the
+  pulse. Enabling Glass hides this setting and disables the solid-interface effect.
+- **Updated shell layout:** Live TV, Movies and Series share one rounded browse container with their
+  category, content and preview/poster areas inside it. The navigation rail has a matching background plate
+  and compact selection beacon. The top bar and rail use less vertical space during normal browsing, then
+  expand automatically when Audio Mode needs the larger player bar.
 - **Settings → Panel Width Adjustment**: set how wide the three browse panels are — the **category rail**,
   the **item list/grid** and the **preview/poster** pane — separately for **Live TV**, **Movies** and
   **Series**.
@@ -787,8 +804,13 @@ For **movies and series episodes** (streamed or downloaded), the player's **Subt
   **mpv** (default — widest format support incl. DTS/TrueHD audio, plus the A/V sync fix) or
   **ExoPlayer** (try it **only if movies/episodes won't start** on your device — it can't decode
   DTS/TrueHD audio and has no A/V sync fix). Either way, if the chosen player fails, the other is
-  tried automatically before an error is shown. The player's **info overlay** shows which engine is
+  tried automatically before an error is shown. That fallback is **not remembered** — every movie and
+  episode starts on your chosen engine every time. The player's **info overlay** shows which engine is
   active.
+- ♻️ **Reset saved player choices** (Video Player Settings, right under the setting above) — flipping a
+  single movie/episode with the ⇄ MPV/EXO pill saves that choice for that one item. This row shows how
+  many are saved and clears them all, so everything follows the **Movies & Series player** setting
+  again. Live TV's per‑channel compatibility mode is a separate list and is kept.
 - 📊 **Measured stream stats** (Video Player Settings → Diagnostics) — on by default. When on, the
   player's **info overlay** measures live fps, bitrate and dropped frames for streams that don't
   declare them (most Xtream live TV). Turn it **off** only if a low‑end TV ever stutters — it affects

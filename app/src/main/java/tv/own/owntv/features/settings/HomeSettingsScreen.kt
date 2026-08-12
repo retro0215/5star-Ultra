@@ -38,6 +38,7 @@ import tv.own.owntv.features.home.HomeLiveRowMode
 import tv.own.owntv.features.home.HomeRow
 import tv.own.owntv.features.home.displayTitle
 import tv.own.owntv.features.home.displayLabel
+import tv.own.owntv.features.home.settingsDescription
 import tv.own.owntv.BuildConfig
 import tv.own.owntv.R
 import tv.own.owntv.ui.components.OwnTVButton
@@ -57,6 +58,9 @@ fun HomeSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
     val androidTvHomeEnabled by settingsVm.androidTvHomeEnabled.collectAsStateWithLifecycle()
     val tvHomeRefresh by settingsVm.tvHomeRefresh.collectAsStateWithLifecycle()
     val colors = OwnTVTheme.colors
+    val trendingEnabled = HomeRow.TRENDING !in config.hidden
+    val trendingDescription = HomeRow.TRENDING.settingsDescription()
+    val trendingStatus = trendingStatusText(hidden = !trendingEnabled, availability = trendingAvailability)
 
     val firstFocus = remember { FocusRequester() }
     // onEnter alone can miss when entering this screen: the first row lives inside a LazyColumn and may
@@ -92,6 +96,23 @@ fun HomeSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             item {
+                GroupLabel(stringResource(R.string.home_row_now_trending))
+            }
+
+            item {
+                Row2(
+                    icon = OwnTVIcon.STAR,
+                    title = stringResource(R.string.home_row_now_trending),
+                    desc = "$trendingDescription\n$trendingStatus",
+                    chip = stringResource(if (trendingEnabled) R.string.common_on else R.string.common_off),
+                    primaryChip = trendingEnabled,
+                    modifier = Modifier.focusRequester(firstFocus),
+                    onClick = { vm.setRowHidden(HomeRow.TRENDING, trendingEnabled) },
+                )
+            }
+
+            item {
+                Spacer(Modifier.height(14.dp))
                 Text(stringResource(R.string.settings_sections), style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
                 Spacer(Modifier.height(4.dp))
                 Text(
@@ -119,11 +140,6 @@ fun HomeSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                         else -> null
                     },
                     onToggleLiveMode = { mode -> vm.setLiveRowMode(row, mode.toggled()) },
-                    firstButtonModifier = if (index == 0) Modifier.focusRequester(firstFocus) else Modifier,
-                    statusText = if (row == HomeRow.TRENDING) trendingStatusText(
-                        hidden = row in config.hidden,
-                        availability = trendingAvailability,
-                    ) else null,
                 )
             }
 
@@ -234,8 +250,6 @@ private fun HomeRowCard(
     onToggleHidden: () -> Unit,
     liveMode: HomeLiveRowMode?,
     onToggleLiveMode: (HomeLiveRowMode) -> Unit,
-    firstButtonModifier: Modifier = Modifier,
-    statusText: String? = null,
 ) {
     val colors = OwnTVTheme.colors
 
@@ -255,15 +269,7 @@ private fun HomeRowCard(
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
-            if (statusText != null) {
-                Text(
-                    statusText,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = colors.onSurfaceVariant,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            } else if (hidden) {
+            if (hidden) {
                 Text(
                     stringResource(R.string.settings_hidden),
                     style = MaterialTheme.typography.labelSmall,
@@ -293,7 +299,6 @@ private fun HomeRowCard(
         OwnTVButton(
             label = stringResource(if (hidden) R.string.common_show else R.string.common_hide),
             onClick = onToggleHidden,
-            modifier = firstButtonModifier,
             style = OwnTVButtonStyle.SECONDARY,
         )
     }

@@ -4,6 +4,23 @@ import android.graphics.Bitmap
 import kotlin.math.max
 import kotlin.math.min
 
+/** Geometric frost pyramid dimensions; the sum stays inside the former 768 px bitmap budget. */
+fun frostMipDimensions(
+    baseWidth: Int,
+    baseHeight: Int,
+    levels: Int = 10,
+): List<Pair<Int, Int>> {
+    val result = ArrayList<Pair<Int, Int>>(levels.coerceAtLeast(1))
+    var width = baseWidth.coerceAtLeast(48)
+    var height = baseHeight.coerceAtLeast(28)
+    repeat(levels.coerceAtLeast(1)) {
+        result += width to height
+        width = (width * 0.78f).toInt().coerceAtLeast(48)
+        height = (height * 0.78f).toInt().coerceAtLeast(28)
+    }
+    return result
+}
+
 /**
  * Compact, dependency-free separable box blur.
  *

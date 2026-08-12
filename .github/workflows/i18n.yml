@@ -14,9 +14,18 @@ name: i18n
 # Why merge base and not HEAD^: a baseline can grow in commit 2 and stay untouched in the final
 # commit, so the final commit's diff against its parent passes while the PR as a whole regressed.
 # The required invariant is: PR-head baseline ⊆ pull-request merge-base baseline.
+#
+# Why main is also a trigger: work lands on main by direct push, not only by PR. A pull_request-only
+# workflow never inspects those commits, so unclassified literals accumulate on main unseen and the
+# next contributor's PR fails for debt that is not theirs. On push the ratchet has no merge base to
+# compare against, so it runs in bootstrap mode: main must be self-consistent (nothing unclassified,
+# nothing stale), which is the invariant a PR then inherits. pseudo stays off the push path — it
+# assembles both APKs, which android.yml already does for main.
 
 on:
   pull_request:
+  push:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -78,7 +87,9 @@ jobs:
 
   pseudo:
     # Builds the debug + release standard APKs and inspects their resource tables. Heavier than the
-    # other two jobs, so it is its own job rather than piggy-backed on android.yml.
+    # other two jobs, so it is its own job rather than piggy-backed on android.yml — and skipped on
+    # push, where android.yml already assembles main.
+    if: github.event_name != 'push'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

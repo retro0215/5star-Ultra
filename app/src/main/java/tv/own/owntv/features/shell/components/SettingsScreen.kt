@@ -105,8 +105,10 @@ import tv.own.owntv.ui.format.formatBestDateTime
 import tv.own.owntv.ui.theme.ALL_GLASS_SURFACES
 import tv.own.owntv.ui.theme.Dimens
 import tv.own.owntv.ui.theme.GlassConfig
+import tv.own.owntv.ui.theme.GlassInteraction
 import tv.own.owntv.ui.theme.GlassPreset
 import tv.own.owntv.ui.theme.GlassSurface
+import tv.own.owntv.ui.theme.glass
 import tv.own.owntv.ui.theme.AppFontFamily
 import tv.own.owntv.ui.theme.FontCustomization
 import tv.own.owntv.ui.theme.LocalGlass
@@ -196,6 +198,7 @@ fun SettingsScreen(
     var showBgPicker by remember { mutableStateOf(false) }
     var showBgRemote by remember { mutableStateOf(false) }
     var showGlassEffect by remember { mutableStateOf(false) }
+    var showAmbientGlow by remember { mutableStateOf(false) }
     var showBrowsing by remember { mutableStateOf(false) }
     val browsingRowFocus = remember { FocusRequester() }
     // U2 — background-image ingest copies a multi-megabyte file; it runs here, off the main thread.
@@ -230,18 +233,19 @@ fun SettingsScreen(
     val livePreviewQuickFocus = remember { FocusRequester() }
     val livePreviewRowFocus = remember { FocusRequester() }
     val glassEffectRowFocus = remember { FocusRequester() }
+    val ambientGlowRowFocus = remember { FocusRequester() }
     // Hoisted scroll state for the root settings list. We snapshot its position the instant a row is
     // clicked (in onClick, before any recomposition) and restore it on dialog close, so the list
     // doesn't visibly jump/scroll when the dialog opens or when we refocus the opener row afterward.
     val scrollState = rememberScrollState()
     var savedScroll by remember { mutableIntStateOf(0) }
-    val anyDialogOpen = showZoom || showFontCustomization || showTheme || showAccent || showFolderPicker || showUpdate || showAbout || showCatchupTime || showEpgOffset || showClearHistory || showAnimations || showStartup || showErrorLog || showAfrWarning || showLivePreviewPanelWarning || showBgImageChooser || showBgPicker || showGlassEffect || showBrowsing
+    val anyDialogOpen = showZoom || showFontCustomization || showTheme || showAccent || showFolderPicker || showUpdate || showAbout || showCatchupTime || showEpgOffset || showClearHistory || showAnimations || showStartup || showErrorLog || showAfrWarning || showLivePreviewPanelWarning || showBgImageChooser || showBgPicker || showGlassEffect || showAmbientGlow || showBrowsing
     // When a dialog closes, restore focus to the row that opened it. NOTE: this restore crosses
     // INTO the root focus group from outside (the dialog), but onEnter does NOT fire for programmatic
     // requestsFocus (only for directional entry) — so dialogReturn must be cleared HERE, not in onEnter.
     // If it's left set, the next directional entry (e.g. sidebar→here) would re-route to a stale row.
     var dialogReturn by remember { mutableStateOf<FocusRequester?>(null) }
-    LaunchedEffect(showZoom, showFontCustomization, showTheme, showAccent, showFolderPicker, showUpdate, showAbout, showCatchupTime, showEpgOffset, showClearHistory, showAnimations, showStartup, showErrorLog, showAfrWarning, showLivePreviewPanelWarning, showBgImageChooser, showBgPicker, showGlassEffect, showBrowsing) {
+    LaunchedEffect(showZoom, showFontCustomization, showTheme, showAccent, showFolderPicker, showUpdate, showAbout, showCatchupTime, showEpgOffset, showClearHistory, showAnimations, showStartup, showErrorLog, showAfrWarning, showLivePreviewPanelWarning, showBgImageChooser, showBgPicker, showGlassEffect, showAmbientGlow, showBrowsing) {
         if (!anyDialogOpen) {
             // When a scrim dialog is torn down, Compose's focus re-search through the newly-exposed
             // scrollable Column resets its scroll to 0 and then bringIntoView-animates to wherever
@@ -280,7 +284,13 @@ fun SettingsScreen(
     val customAccent by settingsVm.customAccent.collectAsStateWithLifecycle()
     val bgImagePath by settingsVm.bgImagePath.collectAsStateWithLifecycle()
     val glassConfig by settingsVm.glassConfig.collectAsStateWithLifecycle()
+    val glassOn = glassConfig.enabled
     val animationLevel by settingsVm.animationLevel.collectAsStateWithLifecycle()
+    val ambientGlowEnabled by settingsVm.ambientGlowEnabled.collectAsStateWithLifecycle()
+    val ambientGlowPulse by settingsVm.ambientGlowPulse.collectAsStateWithLifecycle()
+    LaunchedEffect(glassOn) {
+        if (glassOn) showAmbientGlow = false
+    }
     val weatherEnabled by settingsVm.weatherEnabled.collectAsStateWithLifecycle()
     val startupMode by settingsVm.startupMode.collectAsStateWithLifecycle()
     val navMenuMode by settingsVm.navMenuMode.collectAsStateWithLifecycle()
@@ -587,7 +597,6 @@ fun SettingsScreen(
         )
         // One consolidated "Glass Effect" entry: opens a dialog holding the glass on/off toggle,
         // the background-image chooser, and the transparency stepper (see GlassEffectDialog).
-        val glassOn = glassConfig.enabled
         SettingsRow(
             tone = TileTone.PRIMARY, icon = OwnTVIcon.THEME,
             title = stringResource(R.string.settings_glass_effect), desc = stringResource(R.string.settings_glass_description),
@@ -596,6 +605,18 @@ fun SettingsScreen(
             onClick = { savedScroll = scrollState.value; dialogReturn = glassEffectRowFocus; showGlassEffect = true }, showChevron = true,
             modifier = Modifier.focusRequester(glassEffectRowFocus),
         )
+        if (!glassOn) {
+            SettingsRow(
+                tone = TileTone.PRIMARY, icon = OwnTVIcon.PALETTE,
+                title = stringResource(R.string.settings_ambient_glow),
+                desc = stringResource(R.string.settings_ambient_glow_description),
+                chip = stringResource(if (ambientGlowEnabled) R.string.common_on else R.string.common_off),
+                chipTone = if (ambientGlowEnabled) TileTone.PRIMARY else TileTone.SECONDARY,
+                onClick = { savedScroll = scrollState.value; dialogReturn = ambientGlowRowFocus; showAmbientGlow = true },
+                showChevron = true,
+                modifier = Modifier.focusRequester(ambientGlowRowFocus),
+            )
+        }
         SettingsRow(
             tone = TileTone.SECONDARY, icon = OwnTVIcon.PALETTE,
             title = stringResource(R.string.settings_font_customization),
@@ -763,7 +784,7 @@ fun SettingsScreen(
             // Dialog-opening entries return focus to the search field on close (their normal row
             // isn't composed while searching). Toggle entries keep the results visible so the chip
             // updates live.
-            val entries = listOf(
+            val entries = listOfNotNull(
                 SettingsSearchEntry(stringResource(R.string.settings_appearance_group), stringResource(R.string.settings_language), stringResource(R.string.settings_search_keywords_language), OwnTVIcon.LANGUAGE, TileTone.PRIMARY,
                     chip = languageChip, chipTone = TileTone.PRIMARY) { open(SettingsTab.LANGUAGE) },
                 SettingsSearchEntry(stringResource(R.string.settings_group_profile), stringResource(R.string.profiles_title), stringResource(R.string.settings_search_keywords_profiles), OwnTVIcon.PERSON, TileTone.SECONDARY) { open(SettingsTab.PROFILES) },
@@ -790,6 +811,8 @@ fun SettingsScreen(
                     chip = themeLabel(themeMode)) { savedScroll = scrollState.value; dialogReturn = searchFieldFocus; showTheme = true },
                 SettingsSearchEntry(stringResource(R.string.settings_group_appearance), stringResource(R.string.settings_accent), stringResource(R.string.settings_search_keywords_accent), OwnTVIcon.PALETTE, TileTone.SECONDARY,
                     chip = if (customAccent.isNotBlank()) customAccent.uppercase() else stringResource(accent.labelRes), chipTone = TileTone.SECONDARY) { savedScroll = scrollState.value; dialogReturn = searchFieldFocus; showAccent = true },
+                if (!glassOn) SettingsSearchEntry(stringResource(R.string.settings_group_appearance), stringResource(R.string.settings_ambient_glow), stringResource(R.string.settings_ambient_glow_description), OwnTVIcon.PALETTE, TileTone.PRIMARY,
+                    chip = stringResource(if (ambientGlowEnabled) R.string.common_on else R.string.common_off), chipTone = if (ambientGlowEnabled) TileTone.PRIMARY else TileTone.SECONDARY) { savedScroll = scrollState.value; dialogReturn = searchFieldFocus; showAmbientGlow = true } else null,
                 SettingsSearchEntry(
                     stringResource(R.string.settings_group_appearance),
                     stringResource(R.string.settings_font_customization),
@@ -964,20 +987,35 @@ fun SettingsScreen(
             glassOn = glassConfig.enabled,
             preset = glassConfig.preset,
             alphaPercent = (glassConfig.alpha * 100).roundToInt(),
+            highlightPercent = (glassConfig.highlightStrength * 100).roundToInt(),
+            allowFullTransparency = glassConfig.allowFullTransparency,
+            depthEffects = glassConfig.depthEffects,
             bgOn = bgImagePath.isNotBlank(),
             onToggleGlass = {
                 val on = glassConfig.enabled
                 settingsVm.setGlassScopeBitmask(if (on) 0 else GlassConfig(ALL_GLASS_SURFACES).toBitmask())
             },
             onSetPreset = settingsVm::setGlassPreset,
-            onSetAlpha = { settingsVm.setGlassAlphaPercent(it) },
+            onSetAlpha = { settingsVm.setGlassAlphaPercent(it, (glassConfig.blurStrength * 100).roundToInt()) },
             blurPercent = (glassConfig.blurStrength * 100).roundToInt(),
-            onSetBlur = { settingsVm.setGlassBlurPercent(it) },
+            onSetBlur = { settingsVm.setGlassBlurPercent(it, (glassConfig.alpha * 100).roundToInt()) },
+            onSetHighlight = { settingsVm.setGlassHighlightPercent(it) },
+            onSetAllowFullTransparency = settingsVm::setGlassAllowFullTransparency,
+            onSetDepthEffects = settingsVm::setGlassDepthEffects,
             scope = glassConfig.scope,
             onSetScope = { settingsVm.setGlassScopeBitmask(it) },
             // Hand off to the existing background-image chooser; on close it returns to the Glass Effect row.
             onOpenBackground = { showGlassEffect = false; dialogReturn = glassEffectRowFocus; showBgImageChooser = true },
             onDismiss = { showGlassEffect = false },
+        )
+    }
+    if (showAmbientGlow) {
+        AmbientGlowDialog(
+            glowEnabled = ambientGlowEnabled,
+            pulseEnabled = ambientGlowPulse,
+            onToggleGlow = { settingsVm.setAmbientGlowEnabled(!ambientGlowEnabled) },
+            onTogglePulse = { settingsVm.setAmbientGlowPulse(!ambientGlowPulse) },
+            onDismiss = { showAmbientGlow = false },
         )
     }
     if (showErrorLog) {
@@ -1883,6 +1921,69 @@ private fun ZoomDialog(current: Int, onSet: (Int) -> Unit, onDismiss: () -> Unit
     }
 }
 
+/** Solid-interface radiance controls, kept together in one compact TV-safe popup. */
+@Composable
+private fun AmbientGlowDialog(
+    glowEnabled: Boolean,
+    pulseEnabled: Boolean,
+    onToggleGlow: () -> Unit,
+    onTogglePulse: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val colors = OwnTVTheme.colors
+    val firstFocus = remember { FocusRequester() }
+    LaunchedEffect(Unit) { runCatching { firstFocus.requestFocus() } }
+    BackHandler { onDismiss() }
+    Box(
+        modifier = Modifier.fillMaxSize().modalScrim().trapAllFocusExit().focusGroup(),
+        contentAlignment = Alignment.Center,
+    ) {
+        tv.own.owntv.ui.theme.PopupFontTheme {
+            Column(
+                modifier = Modifier.dialogPanel(width = 480.dp, padding = 28.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Text(stringResource(R.string.settings_ambient_glow), style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
+                Spacer(Modifier.height(6.dp))
+                Text(
+                    stringResource(R.string.settings_ambient_glow_dialog_description),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = colors.onSurfaceVariant,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                )
+                Spacer(Modifier.height(20.dp))
+                OwnTVButton(
+                    stringResource(
+                        R.string.settings_section_toggle,
+                        stringResource(R.string.settings_ambient_glow_effect),
+                        stringResource(if (glowEnabled) R.string.common_on else R.string.common_off),
+                    ),
+                    onClick = onToggleGlow,
+                    style = if (glowEnabled) OwnTVButtonStyle.PRIMARY else OwnTVButtonStyle.SECONDARY,
+                    icon = OwnTVIcon.PALETTE,
+                    modifier = Modifier.fillMaxWidth().focusRequester(firstFocus),
+                )
+                if (glowEnabled) {
+                    Spacer(Modifier.height(10.dp))
+                    OwnTVButton(
+                        stringResource(
+                            R.string.settings_section_toggle,
+                            stringResource(R.string.settings_ambient_glow_pulse),
+                            stringResource(if (pulseEnabled) R.string.common_on else R.string.common_off),
+                        ),
+                        onClick = onTogglePulse,
+                        style = if (pulseEnabled) OwnTVButtonStyle.PRIMARY else OwnTVButtonStyle.SECONDARY,
+                        icon = OwnTVIcon.THEME,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+                Spacer(Modifier.height(18.dp))
+                OwnTVButton(stringResource(R.string.settings_done), onClick = onDismiss, modifier = Modifier.fillMaxWidth())
+            }
+        }
+    }
+}
+
 /**
  * A stepper for the Glass effect fill strength — how opaque the translucent panels are over the
  * background photo. Higher = more solid (less see-through). Changes apply live. Range 20–95% in 5%
@@ -1894,12 +1995,18 @@ private fun GlassEffectDialog(
     preset: GlassPreset,
     alphaPercent: Int,
     blurPercent: Int,
+    highlightPercent: Int,
+    allowFullTransparency: Boolean,
+    depthEffects: Boolean,
     bgOn: Boolean,
     scope: Set<GlassSurface>,
     onToggleGlass: () -> Unit,
     onSetPreset: (GlassPreset) -> Unit,
     onSetAlpha: (Int) -> Unit,
     onSetBlur: (Int) -> Unit,
+    onSetHighlight: (Int) -> Unit,
+    onSetAllowFullTransparency: (Boolean) -> Unit,
+    onSetDepthEffects: (Boolean) -> Unit,
     onSetScope: (Int) -> Unit,
     onOpenBackground: () -> Unit,
     onDismiss: () -> Unit,
@@ -1912,7 +2019,7 @@ private fun GlassEffectDialog(
     var showSurfaces by remember { mutableStateOf(false) }
     LaunchedEffect(showSurfaces) { if (!showSurfaces) runCatching { firstFocus.requestFocus() } }
     val min = 20
-    val max = 95
+    val max = 100
     val step = 5
     fun clamp(v: Int) = v.coerceIn(min, max)
     // Backdrop blur ("frost") stepper — 0..100 in 10% steps. 0 keeps the Tier-1 translucency-only look;
@@ -1921,6 +2028,8 @@ private fun GlassEffectDialog(
     val blurMax = 100
     val blurStep = 10
     fun blurClamp(v: Int) = v.coerceIn(blurMin, blurMax)
+    val highlightStep = 5
+    fun highlightClamp(v: Int) = v.coerceIn(0, 100)
     BackHandler { onDismiss() }
     if (!showSurfaces) Box(
         modifier = Modifier.fillMaxSize().modalScrim().trapAllFocusExit().focusGroup(),
@@ -1948,16 +2057,16 @@ private fun GlassEffectDialog(
                 icon = OwnTVIcon.THEME,
                 modifier = Modifier.fillMaxWidth().focusRequester(firstFocus),
             )
-            Spacer(Modifier.height(12.dp))
-            // Optional background photo behind everything.
-            OwnTVButton(
-                if (bgOn) stringResource(R.string.settings_background_on) else stringResource(R.string.settings_background_off),
-                onClick = onOpenBackground,
-                style = OwnTVButtonStyle.SECONDARY,
-                icon = OwnTVIcon.IMAGE,
-                modifier = Modifier.fillMaxWidth(),
-            )
             if (glassOn) {
+                Spacer(Modifier.height(12.dp))
+                // Wallpaper belongs to Glass mode and stays hidden until Glass is enabled.
+                OwnTVButton(
+                    if (bgOn) stringResource(R.string.settings_background_on) else stringResource(R.string.settings_background_off),
+                    onClick = onOpenBackground,
+                    style = OwnTVButtonStyle.SECONDARY,
+                    icon = OwnTVIcon.IMAGE,
+                    modifier = Modifier.fillMaxWidth(),
+                )
                 Spacer(Modifier.height(22.dp))
                 Text(stringResource(R.string.settings_glass_preset_title), style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
                 Spacer(Modifier.height(4.dp))
@@ -1974,7 +2083,8 @@ private fun GlassEffectDialog(
                             OwnTVButton(
                                 label = glassPresetLabel(choice),
                                 onClick = { onSetPreset(choice) },
-                                style = if (preset == choice) OwnTVButtonStyle.PRIMARY else OwnTVButtonStyle.SECONDARY,
+                                style = OwnTVButtonStyle.SECONDARY,
+                                selected = preset == choice,
                                 compact = true,
                                 modifier = Modifier.weight(1f),
                             )
@@ -1982,7 +2092,6 @@ private fun GlassEffectDialog(
                     }
                     Spacer(Modifier.height(8.dp))
                 }
-                if (preset == GlassPreset.CUSTOM) {
                 Spacer(Modifier.height(10.dp))
                 Text(stringResource(R.string.settings_transparency_title), style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
                 Spacer(Modifier.height(4.dp))
@@ -2024,6 +2133,100 @@ private fun GlassEffectDialog(
                     )
                     StepButton(stringResource(R.string.settings_increase), dimmed = blurPercent >= blurMax) { onSetBlur(blurClamp(blurPercent + blurStep)) }
                 }
+
+                Spacer(Modifier.height(20.dp))
+                Text(stringResource(R.string.settings_glass_highlight_title), style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    stringResource(R.string.settings_glass_highlight_description),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = colors.onSurfaceVariant,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                )
+                Spacer(Modifier.height(12.dp))
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(20.dp)) {
+                    StepButton(stringResource(R.string.settings_decrease), dimmed = highlightPercent <= 0) {
+                        onSetHighlight(highlightClamp(highlightPercent - highlightStep))
+                    }
+                    Text(
+                        stringResource(R.string.settings_surface_transparency, highlightPercent),
+                        style = MaterialTheme.typography.headlineLarge,
+                        color = colors.primary,
+                        modifier = Modifier.width(120.dp),
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                    )
+                    StepButton(stringResource(R.string.settings_increase), dimmed = highlightPercent >= 100) {
+                        onSetHighlight(highlightClamp(highlightPercent + highlightStep))
+                    }
+                }
+
+                Spacer(Modifier.height(18.dp))
+                Text(
+                    stringResource(R.string.settings_glass_full_transparency_description),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = colors.onSurfaceVariant,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                )
+                Spacer(Modifier.height(8.dp))
+                OwnTVButton(
+                    label = "${stringResource(R.string.settings_glass_full_transparency_title)}: ${stringResource(if (allowFullTransparency) R.string.common_on else R.string.common_off)}",
+                    onClick = { onSetAllowFullTransparency(!allowFullTransparency) },
+                    style = OwnTVButtonStyle.SECONDARY,
+                    selected = allowFullTransparency,
+                    compact = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+
+                Spacer(Modifier.height(14.dp))
+                Text(
+                    stringResource(R.string.settings_glass_depth_description),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = colors.onSurfaceVariant,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                )
+                Spacer(Modifier.height(8.dp))
+                OwnTVButton(
+                    label = "${stringResource(R.string.settings_glass_depth_title)}: ${stringResource(if (depthEffects) R.string.common_on else R.string.common_off)}",
+                    onClick = { onSetDepthEffects(!depthEffects) },
+                    style = OwnTVButtonStyle.SECONDARY,
+                    selected = depthEffects,
+                    compact = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+
+                Spacer(Modifier.height(18.dp))
+                Text(stringResource(R.string.settings_glass_live_preview), style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
+                Spacer(Modifier.height(8.dp))
+                Row(
+                    Modifier.fillMaxWidth().height(46.dp),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    // Display-only samples: a row, a focused card, and a focused chrome chip.
+                    Box(
+                        Modifier.weight(1.35f).fillMaxHeight().clip(RoundedCornerShape(12.dp)).glass(
+                            surface = GlassSurface.PANELS,
+                            baseFill = colors.surfaceContainerHighest,
+                            shape = RoundedCornerShape(12.dp),
+                            interaction = GlassInteraction.SELECTED,
+                        ),
+                    )
+                    Box(
+                        Modifier.weight(0.8f).fillMaxHeight().clip(RoundedCornerShape(12.dp)).glass(
+                            surface = GlassSurface.CARDS,
+                            baseFill = colors.surfaceContainerHighest,
+                            shape = RoundedCornerShape(12.dp),
+                            interaction = GlassInteraction.FOCUSED,
+                        ),
+                    )
+                    Box(
+                        Modifier.weight(0.85f).height(30.dp).clip(RoundedCornerShape(15.dp)).glass(
+                            surface = GlassSurface.TOPBAR,
+                            baseFill = colors.surfaceContainerHighest,
+                            shape = RoundedCornerShape(15.dp),
+                            interaction = GlassInteraction.FOCUSED,
+                        ),
+                    )
                 }
                 // Advanced: choose exactly which surfaces render as glass.
                 Spacer(Modifier.height(16.dp))
@@ -2039,7 +2242,13 @@ private fun GlassEffectDialog(
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 if (glassOn) OwnTVButton(
                     stringResource(R.string.settings_reset),
-                    onClick = { onSetPreset(GlassPreset.BALANCED); onSetScope(GlassConfig(ALL_GLASS_SURFACES).toBitmask()) },
+                    onClick = {
+                        onSetPreset(GlassPreset.BALANCED)
+                        onSetHighlight((GlassConfig.DEFAULT_HIGHLIGHT_STRENGTH * 100).roundToInt())
+                        onSetAllowFullTransparency(false)
+                        onSetDepthEffects(true)
+                        onSetScope(GlassConfig(ALL_GLASS_SURFACES).toBitmask())
+                    },
                     style = OwnTVButtonStyle.SECONDARY,
                 )
                 Spacer(Modifier.weight(1f))
@@ -2154,9 +2363,11 @@ private fun BrowsingGroupLabel(title: String, desc: String) {
 @Composable
 private fun glassPresetLabel(preset: GlassPreset): String = stringResource(
     when (preset) {
+        GlassPreset.ULTRA_CLEAR -> R.string.settings_glass_preset_ultra_clear
         GlassPreset.CLEAR -> R.string.settings_glass_preset_clear
         GlassPreset.BALANCED -> R.string.settings_glass_preset_balanced
         GlassPreset.TINTED -> R.string.settings_glass_preset_tinted
+        GlassPreset.OPAQUE -> R.string.settings_glass_preset_opaque
         GlassPreset.CUSTOM -> R.string.settings_glass_preset_custom
     },
 )
@@ -2164,9 +2375,11 @@ private fun glassPresetLabel(preset: GlassPreset): String = stringResource(
 @Composable
 private fun glassPresetDescription(preset: GlassPreset): String = stringResource(
     when (preset) {
+        GlassPreset.ULTRA_CLEAR -> R.string.settings_glass_preset_ultra_clear_description
         GlassPreset.CLEAR -> R.string.settings_glass_preset_clear_description
         GlassPreset.BALANCED -> R.string.settings_glass_preset_balanced_description
         GlassPreset.TINTED -> R.string.settings_glass_preset_tinted_description
+        GlassPreset.OPAQUE -> R.string.settings_glass_preset_opaque_description
         GlassPreset.CUSTOM -> R.string.settings_glass_preset_custom_description
     },
 )

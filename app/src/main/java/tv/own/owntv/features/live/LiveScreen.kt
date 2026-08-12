@@ -40,6 +40,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
@@ -63,7 +64,11 @@ import tv.own.owntv.core.database.entity.ChannelEntity
 import tv.own.owntv.core.database.entity.ContentOrderEntity
 import tv.own.owntv.features.customize.MoveToCategoryDialog
 import tv.own.owntv.features.settings.SettingsViewModel
+import tv.own.owntv.features.settings.data.BrowseColumnGap
+import tv.own.owntv.features.settings.data.BrowseColumnDividerSpace
+import tv.own.owntv.features.settings.data.BrowseContainerPadding
 import tv.own.owntv.features.settings.data.PanelSection
+import tv.own.owntv.features.settings.data.browsePanelGapTotal
 import tv.own.owntv.features.settings.data.computePanelWidths
 import tv.own.owntv.features.settings.rememberPanelShares
 import tv.own.owntv.features.shell.components.CategoryRail
@@ -106,6 +111,7 @@ fun LiveScreen(
     previewEnabled: Boolean = true,
     restoreFocus: Boolean = false,
     onRestored: () -> Unit = {},
+    onContentScrolled: (Boolean) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val vm: LiveViewModel = koinViewModel()
@@ -187,6 +193,16 @@ fun LiveScreen(
         if (!rememberLive) runCatching { listState.scrollToItem(0) }
     }
     val catListState = androidx.compose.foundation.lazy.rememberLazyListState()
+    val chromeScrollThresholdPx = with(LocalDensity.current) { 8.dp.roundToPx() }
+    val contentScrolled by remember(effectiveListState, catListState, chromeScrollThresholdPx) {
+        androidx.compose.runtime.derivedStateOf {
+            effectiveListState.firstVisibleItemIndex > 0 ||
+                effectiveListState.firstVisibleItemScrollOffset > chromeScrollThresholdPx ||
+                catListState.firstVisibleItemIndex > 0 ||
+                catListState.firstVisibleItemScrollOffset > chromeScrollThresholdPx
+        }
+    }
+    LaunchedEffect(contentScrolled) { onContentScrolled(contentScrolled) }
     val scope = rememberCoroutineScope()
     var channelPaneFocused by remember { mutableStateOf(false) }
     var railPaneFocused by remember { mutableStateOf(false) }
@@ -307,16 +323,22 @@ fun LiveScreen(
     val selectedItem = railItems.getOrNull(selectedIndex)
     val selectedLabel = selectedItem?.displayLabel() ?: stringResource(R.string.content_category_all_channels)
 
-    // Manual panel widths (Settings → Panel Width Adjustment). Null = this section is at Default, and
-    // the three panels below keep their stock Dimens/weight() sizing.
+    // Manual panel widths (Settings → Panel Width Adjustment). The saved percentages now resolve
+    // against the inside of one shared content container; no stored value is rewritten.
     val panelShares = rememberPanelShares(PanelSection.LIVE, settingsVm)
-    BoxWithConstraints(modifier = modifier.fillMaxSize()) {
-    val panels = panelShares?.let { computePanelWidths(it, maxWidth) }
+    BoxWithConstraints(
+        modifier = modifier
+            .fillMaxSize()
+            .roundedPanel(fillColor = ContentPanelFill)
+            .padding(BrowseContainerPadding)
+            .onFocusChanged { if (it.hasFocus) onChildFocused() },
+    ) {
+    val previewVisible = panelShares?.preview != 0
+    val innerGapTotal = browsePanelGapTotal(previewVisible)
+    val panels = panelShares?.let { computePanelWidths(it, maxWidth, innerGapTotal) }
     Row(
         modifier = Modifier
-            .fillMaxSize()
-            .onFocusChanged { if (it.hasFocus) onChildFocused() },
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
+            .fillMaxSize(),
     ) {
         CategoryRail(
             width = panels?.category ?: Dimens.RailWidthFixed,
@@ -328,6 +350,7 @@ fun LiveScreen(
             // would kill that stream (e.g. while navigating left to leave Live), so we skip it.
             onFocused = { if (previewEnabled) vm.stopPreview() },
             listState = catListState,
+            showPanel = false,
             modifier = Modifier
                 .onFocusChanged { railPaneFocused = it.hasFocus }
                 .chNavPaging(
@@ -343,12 +366,22 @@ fun LiveScreen(
                 ),
         )
 
+        Spacer(Modifier.width(BrowseColumnGap))
+        Box(
+            Modifier
+                .width(BrowseColumnDividerSpace)
+                .fillMaxHeight()
+                .padding(vertical = 2.dp)
+                .background(OwnTVTheme.colors.outlineVariant.copy(alpha = 0.35f)),
+        )
+
+        Spacer(Modifier.width(BrowseColumnGap))
+
         // Layer 3 — header + channel list (fixed-width column; the preview pane fills the rest)
         Column(
             modifier = Modifier
                 .width(panels?.list ?: Dimens.ChannelListWidth)
                 .fillMaxHeight()
-                .roundedPanel(fillColor = ContentPanelFill)
                 // Track whether this pane holds focus so chNavPaging only consumes CH keys when it does.
                 .onFocusChanged { channelPaneFocused = it.hasFocus }
                 // CH+- key paging for this channel list. Long-press jumps to first/last channel;
@@ -407,7 +440,6 @@ fun LiveScreen(
                 // (landing on the top bar) — trap vertical exits; Left/Right/Back leave normally.
                 .trapVerticalFocusExit()
                 .focusGroup()
-                .padding(horizontal = Dimens.ScreenPaddingH, vertical = Dimens.ScreenPaddingV),
         ) {
             Text(
                 stringResource(R.string.content_section_category, stringResource(R.string.common_nav_live_tv), selectedLabel),
@@ -481,13 +513,14 @@ fun LiveScreen(
         }
 
         // Layer 4 — preview pane (informational only — no focusable actions; management lives in long-press)
-        if (panelShares?.preview != 0) {
+        if (previewVisible) {
+            Spacer(Modifier.width(BrowseColumnGap))
             Box(
                 modifier = Modifier
                     .then(if (panels != null) Modifier.width(panels.preview) else Modifier.weight(1f))
                     .fillMaxSize()
                     .roundedPanel(fillColor = PreviewPanelFill, surface = GlassSurface.PREVIEW)
-                    .padding(Dimens.GapLarge),
+                    .padding(BrowseContainerPadding),
             ) {
                 LivePreviewPane(
                     channel = previewChannel,
@@ -799,7 +832,6 @@ private fun ChannelMenuAction(
         selectedContainerColor = androidx.compose.ui.graphics.Color.Transparent,
         surface = GlassSurface.DIALOGS,
         glassFrostScale = 0.86f,
-        glassCornerRadius = 14.dp,
         glassIdleRimAlpha = 0f,
     ) { focused ->
         val foreground = when {

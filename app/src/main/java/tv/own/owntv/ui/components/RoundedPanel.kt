@@ -10,6 +10,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -18,10 +22,8 @@ import tv.own.owntv.ui.theme.LocalGlass
 import tv.own.owntv.ui.theme.OwnTVTheme
 import tv.own.owntv.ui.theme.glass
 
-// Phase 6 — per-region panel fill colours (owner-specified, 2026-06-27).
-// Each returns a dark-green tint in dark mode, and a light-grey-green tint in light mode,
-// so the theme toggle actually changes the panels.
-// Option A — Clean + Premium (owntv_panel_color_concepts_vertical.html)
+// Per-region colour identity from the established shell design. The three roles remain distinct in
+// both themes without collapsing the interface into the greyer generic M3 elevation ladder.
 val RailPanelFill: Color
     @Composable @ReadOnlyComposable get() =
         if (OwnTVTheme.colors.isDark) Color(0xFF111C18) else Color(0xFFE6EEE9)
@@ -36,8 +38,7 @@ val PreviewPanelFill: Color
 
 /**
  * Phase 6 — a rounded visual container matching the new-shell mockup's "panel 2/3/4" look: large rounded
- * corners, a subtle surface fill, and a hairline [outlineVariant] border. Content is clipped to the
- * rounded shape.
+ * corners, a subtle surface fill, and a hairline top-edge lift. Content is clipped to the shape.
  *
  * This is a VISUAL wrapper only — a plain [Box], no `clickable`/`selectable`/focus of its own.
  *
@@ -62,17 +63,28 @@ fun RoundedPanel(
     content: @Composable () -> Unit,
 ) {
     val colors = OwnTVTheme.colors
-    val bg = fillColor ?: colors.surfaceContainerLowest
     val shape = RoundedCornerShape(radius)
     val glassy = LocalGlass.current.isGlassy(surface)
+    val bg = fillColor ?: colors.surfaceContainerLowest
     val outline = colors.outlineVariant.copy(alpha = 0.66f)
     Box(
         modifier = modifier
             .clip(shape)
-            .glass(surface = surface, baseFill = bg, shape = shape, cornerRadius = radius)
-            // glass() already draws the same 1dp/0.11 idle rim. Keep the explicit outline only for
-            // solid mode so every glass panel loses one redundant perimeter pass.
-            .then(if (glassy) Modifier else Modifier.border(width = 1.dp, color = outline, shape = shape))
+            .glass(
+                surface = surface,
+                baseFill = bg,
+                shape = shape,
+                condenseChrome = surface == GlassSurface.SIDEBAR,
+            )
+            .then(
+                if (glassy) Modifier else Modifier
+                    .border(width = 1.dp, color = outline, shape = shape)
+                    .solidPanelMaterial(
+                        edgeColor = colors.outlineVariant,
+                        accent = colors.primary,
+                        isDark = colors.isDark,
+                    )
+            )
             .padding(innerPadding),
     ) {
         content()
@@ -91,12 +103,67 @@ fun Modifier.roundedPanel(
     surface: GlassSurface = GlassSurface.PANELS,
 ): Modifier {
     val colors = OwnTVTheme.colors
-    val bg = fillColor ?: colors.surfaceContainerLowest
     val shape = RoundedCornerShape(radius)
     val glassy = LocalGlass.current.isGlassy(surface)
+    val bg = fillColor ?: colors.surfaceContainerLowest
     val outline = colors.outlineVariant.copy(alpha = 0.66f)
     return this
         .clip(shape)
-        .glass(surface = surface, baseFill = bg, shape = shape, cornerRadius = radius)
-        .then(if (glassy) Modifier else Modifier.border(width = 1.dp, color = outline, shape = shape))
+        .glass(
+            surface = surface,
+            baseFill = bg,
+            shape = shape,
+            condenseChrome = surface == GlassSurface.SIDEBAR,
+        )
+        .then(
+            if (glassy) Modifier else Modifier
+                .border(width = 1.dp, color = outline, shape = shape)
+                .solidPanelMaterial(
+                    edgeColor = colors.outlineVariant,
+                    accent = colors.primary,
+                    isDark = colors.isDark,
+                )
+        )
+}
+
+/**
+ * Cached solid-material lighting: one broad accent reflection, a restrained lower depth tone, and
+ * the existing top-edge lift. These are plain brush draws inside the panel clip—no blur, shadow
+ * layer, animation, or per-frame brush allocation.
+ */
+private fun Modifier.solidPanelMaterial(
+    edgeColor: Color,
+    accent: Color,
+    isDark: Boolean,
+): Modifier = drawWithCache {
+    val edgeHeight = 2.dp.toPx()
+    val edge = Brush.verticalGradient(
+        colors = listOf(edgeColor.copy(alpha = 0.42f), Color.Transparent),
+        endY = edgeHeight,
+    )
+    val ambient = Brush.radialGradient(
+        colors = listOf(
+            accent.copy(alpha = if (isDark) 0.055f else 0.032f),
+            Color.Transparent,
+        ),
+        center = Offset(
+            x = minOf(size.width * 0.16f, 120.dp.toPx()),
+            y = -minOf(size.height * 0.08f, 20.dp.toPx()),
+        ),
+        radius = maxOf(size.minDimension * 1.45f, 260.dp.toPx()),
+    )
+    val depth = Brush.verticalGradient(
+        colors = listOf(
+            Color.Transparent,
+            Color.Black.copy(alpha = if (isDark) 0.045f else 0.018f),
+        ),
+        startY = size.height * 0.58f,
+        endY = size.height,
+    )
+    onDrawWithContent {
+        drawRect(brush = ambient)
+        drawRect(brush = depth)
+        drawContent()
+        drawRect(brush = edge, size = Size(size.width, edgeHeight))
+    }
 }

@@ -26,7 +26,6 @@ fun PlayerFailureReason.displayText(): String = when (this) {
     PlayerFailureReason.COPY_MODE_FALLBACK -> stringResource(R.string.player_reason_copy_mode_fallback)
     PlayerFailureReason.ARCHIVE_SOFTWARE_FALLBACK -> stringResource(R.string.player_reason_archive_software_fallback)
     PlayerFailureReason.STEREO_FALLBACK -> stringResource(R.string.player_reason_stereo_fallback)
-    PlayerFailureReason.VOD_ENGINE_SESSION_FALLBACK -> stringResource(R.string.player_reason_vod_engine_session_fallback)
     PlayerFailureReason.ONE_SESSION_PROVIDER -> stringResource(R.string.player_reason_one_session_provider)
     PlayerFailureReason.MPV_HANDOFF -> stringResource(R.string.player_reason_mpv_handoff)
     PlayerFailureReason.LIVE_FALLBACK -> stringResource(R.string.player_reason_live_fallback)

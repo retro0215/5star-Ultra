@@ -50,7 +50,6 @@ data class NavLadderColors(
 fun rememberNavLadderColors(
     selected: Boolean,
     focused: Boolean,
-    snapFocusFill: Boolean = false,
 ): NavLadderColors {
     val colors = OwnTVTheme.colors
     val activeSelected = selected && focused
@@ -62,10 +61,10 @@ fun rememberNavLadderColors(
             selected -> colors.secondaryContainer.copy(alpha = 0.45f)
             else -> Color.Transparent
         },
-        // Sidebar/category rows move while focus changes. A translucent fill fade leaves the same
-        // dark trailing plate previously fixed in Settings, so glass rails switch only their wide
-        // container immediately. Foreground/icon colour easing remains for visual polish.
-        animationSpec = ownTvTween(if (snapFocusFill) 0 else 140),
+        // Both navigation rails can move their rows while focus changes. Their container must switch
+        // immediately in every material mode or the old fill follows the scrolling item as a dark
+        // plate. Foreground/icon colour easing remains for visual polish.
+        animationSpec = ownTvTween(0),
         label = "navLadderBg",
     )
     val content by animateColorAsState(

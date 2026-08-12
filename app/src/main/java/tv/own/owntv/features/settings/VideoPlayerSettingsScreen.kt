@@ -122,6 +122,7 @@ fun VideoPlayerSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier)
     val vm: SettingsViewModel = koinViewModel()
     val hw by vm.hwDecoding.collectAsStateWithLifecycle()
     val vodExo by vm.vodPreferExo.collectAsStateWithLifecycle()
+    val enginePins by vm.vodEnginePinCount.collectAsStateWithLifecycle()
     val measuredStats by vm.measuredStreamStats.collectAsStateWithLifecycle()
     val detailedDiagnostics by vm.detailedDiagnostics.collectAsStateWithLifecycle()
     val directTune by vm.directTune.collectAsStateWithLifecycle()
@@ -254,6 +255,18 @@ fun VideoPlayerSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier)
             desc = stringResource(R.string.settings_movies_player_description),
             chip = stringResource(if (vodExo) R.string.settings_player_exoplayer else R.string.settings_player_mpv), primaryChip = !vodExo,
             onClick = { vm.setVodPreferExo(!vodExo) },
+        )
+        Row2(
+            icon = OwnTVIcon.PLAY, title = stringResource(R.string.settings_reset_player_choices),
+            desc = stringResource(R.string.settings_reset_player_choices_description),
+            chip = if (enginePins == 0) stringResource(R.string.settings_reset_player_choices_none)
+            else pluralStringResource(R.plurals.settings_reset_player_choices_count, enginePins, enginePins),
+            primaryChip = enginePins > 0,
+            modifier = Modifier.focusRequester(dialogRowFocus.getValue(Dialog.RESET_PINS)),
+            // Opens the confirmation even with nothing pinned: a settings row that swallows the OK
+            // press is a dead end on a remote, and the chip already says whether there is anything
+            // to reset.
+            onClick = { savedScroll = scrollState.value; dialog = Dialog.RESET_PINS },
         )
         Row2(
             icon = OwnTVIcon.PLAY, title = stringResource(R.string.settings_external_player),
@@ -514,6 +527,10 @@ fun VideoPlayerSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier)
             onToggle = { section, enabled -> vm.setExternalPlayer(section, enabled) },
             onDismiss = { dialog = Dialog.NONE },
         )
+        Dialog.RESET_PINS -> ResetPlayerChoicesDialog(
+            onConfirm = { vm.clearVodEnginePins(); dialog = Dialog.NONE },
+            onCancel = { dialog = Dialog.NONE },
+        )
         Dialog.NONE -> Unit
     }
 
@@ -553,7 +570,43 @@ private fun LiveLatencyWarningDialog(onConfirm: () -> Unit, onCancel: () -> Unit
     }
 }
 
-private enum class Dialog { NONE, ZOOM, SUB_STYLE, SUB_LANG, AUDIO_LANG, AUDIO_SYNC, RESUME, LIVE_LATENCY, LIVE_CUSTOM, LIVE_PREROLL, LIVE_PREROLL_SOURCES, LIVE_PREROLL_SOURCE, EXTERNAL_PLAYER }
+/** Confirmation before forgetting every per-item engine pin. Focus starts on Cancel — the row that
+ *  opens this is one press away from the engine setting, so a mis-press must not wipe the user's own
+ *  per-item choices. */
+@Composable
+private fun ResetPlayerChoicesDialog(onConfirm: () -> Unit, onCancel: () -> Unit) {
+    val colors = OwnTVTheme.colors
+    val firstFocus = remember { FocusRequester() }
+    LaunchedEffect(Unit) { runCatching { firstFocus.requestFocus() } }
+    BackHandler { onCancel() }
+    Box(
+        modifier = Modifier.fillMaxSize().modalScrim().trapAllFocusExit().focusGroup(),
+        contentAlignment = Alignment.Center,
+    ) {
+        Column(modifier = Modifier.dialogPanel(width = 500.dp, padding = 28.dp)) {
+            Text(
+                stringResource(R.string.settings_reset_player_choices_confirm),
+                style = MaterialTheme.typography.titleLarge, color = colors.onSurface,
+            )
+            Spacer(Modifier.height(12.dp))
+            Text(
+                stringResource(R.string.settings_reset_player_choices_confirm_description),
+                style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant,
+            )
+            Spacer(Modifier.height(20.dp))
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                OwnTVButton(
+                    stringResource(R.string.common_cancel), onClick = onCancel,
+                    style = OwnTVButtonStyle.SECONDARY, modifier = Modifier.focusRequester(firstFocus),
+                )
+                Spacer(Modifier.weight(1f))
+                OwnTVButton(stringResource(R.string.common_reset), onClick = onConfirm)
+            }
+        }
+    }
+}
+
+private enum class Dialog { NONE, ZOOM, SUB_STYLE, SUB_LANG, AUDIO_LANG, AUDIO_SYNC, RESUME, LIVE_LATENCY, LIVE_CUSTOM, LIVE_PREROLL, LIVE_PREROLL_SOURCES, LIVE_PREROLL_SOURCE, EXTERNAL_PLAYER, RESET_PINS }
 
 /** Row chip for the External player row: "Off", "On" (all three), or the sections that are on. */
 @Composable
