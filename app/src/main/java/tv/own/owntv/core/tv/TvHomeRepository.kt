@@ -593,7 +593,7 @@ class TvHomeRepository(
             .setDescription(renderContext.getString(R.string.launcher_recent_live_description))
             .setAppLinkIntentUri(LauncherDeepLink.OpenLiveSection.toUri())
             .setInternalProviderId(platformInternalId(TvProviderSurface.RECENT_LIVE, profileId, MediaType.LIVE, RECENT_LIVE_CHANNEL_STABLE_KEY))
-            .setLogo(resourceUri(R.drawable.tv_banner))
+            .setLogo(resourceUri(R.drawable.tv_banner_1))
             .build()
     }
 
