@@ -126,8 +126,8 @@ class UpdateManager(
         scope.launch {
             runCatching {
                 val dir = File(context.filesDir, "updates").apply { mkdirs() }
-                val out = File(dir, "owntv-update.apk")
-                val request = Request.Builder().url(info.apkUrl).header("User-Agent", "OwnTV").build()
+                val out = File(dir, "goattv-update.apk")
+                val request = Request.Builder().url(info.apkUrl).header("User-Agent", "GoatTV").build()
                 client.newCall(request).execute().use { resp ->
                     if (!resp.isSuccessful) throw DownloadHttpException(resp.code)
                     val body = resp.body
@@ -200,6 +200,6 @@ class UpdateManager(
 
     companion object {
         private const val TAG = "UpdateManager"
-        const val REPO = "ahXN00/OwnTV"
+        const val REPO = "retro0215/GoatTV"
     }
 }
