@@ -928,7 +928,7 @@ class SettingsRepository(private val context: Context, private val localeStore: 
             (p[Keys.PANEL_W_LIVE_LIST] ?: 0) > 0 &&
             p[Keys.PANEL_W_LIVE_PREVIEW] == 0
 
-    fun panelWidthEnabled(s: PanelSection): Flow<Boolean> = prefsFlow { it[panelOnKey(s)] ?: false }
+    fun panelWidthEnabled(s: PanelSection): Flow<Boolean> = prefsFlow { it[panelOnKey(s)] ?: true }
 
     /**
      * The section's three shares, or null when nothing has been saved yet (the dialog then seeds
@@ -940,7 +940,11 @@ class SettingsRepository(private val context: Context, private val localeStore: 
         val list = p[panelListKey(s)]
         val preview = p[panelPreviewKey(s)]
         if (category == null || list == null || preview == null || category <= 0 || list <= 0 || preview < 0) {
-            null
+            when (s) {
+                PanelSection.LIVE -> PanelShares(30, 45, 25)
+                PanelSection.MOVIES -> PanelShares(15, 65, 20)
+                PanelSection.SERIES -> PanelShares(15, 65, 20)
+            }
         } else {
             balanceToTotal(
                 PanelShares(

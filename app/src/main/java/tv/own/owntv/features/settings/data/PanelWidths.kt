@@ -54,23 +54,16 @@ data class PanelWidthSpec(val category: Dp, val list: Dp, val preview: Dp)
  * [gapTotal] is the space the browse row's `Arrangement.spacedBy(4.dp)` puts between the panels (two
  * gaps), which the panels themselves never occupy.
  */
-fun defaultPanelShares(section: PanelSection, rowWidth: Dp, gapTotal: Dp = 8.dp): PanelShares {
-    val content = (rowWidth - gapTotal).value.coerceAtLeast(1f)
-    val rail = Dimens.RailWidthFixed.value
-    val listDp: Float
-    val previewDp: Float
-    if (section == PanelSection.LIVE) {
-        listDp = Dimens.ChannelListWidth.value
-        previewDp = (content - rail - listDp).coerceAtLeast(1f)
-    } else {
-        val rest = (content - rail).coerceAtLeast(1f)
-        listDp = rest * 1.8f / 2.8f
-        previewDp = rest * 1f / 2.8f
+fun defaultPanelShares(
+    section: PanelSection,
+    rowWidth: Dp,
+    gapTotal: Dp = 8.dp
+): PanelShares {
+    return when (section) {
+        PanelSection.LIVE -> PanelShares(30, 45, 25)
+        PanelSection.MOVIES -> PanelShares(15, 65, 20)
+        PanelSection.SERIES -> PanelShares(15, 65, 20)
     }
-    val category = PanelWidthLimits.snap((rail / content * 100f).roundToInt())
-    val list = PanelWidthLimits.snap((listDp / content * 100f).roundToInt())
-    val preview = PanelWidthLimits.snap((previewDp / content * 100f).roundToInt())
-    return balanceToTotal(PanelShares(category, list, preview))
 }
 
 /**

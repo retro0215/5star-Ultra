@@ -1,5 +1,6 @@
 package tv.own.owntv.ui.components
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -21,7 +22,10 @@ import androidx.tv.material3.Text
 import tv.own.owntv.R
 import tv.own.owntv.ui.theme.AccentCyan
 import tv.own.owntv.ui.theme.OwnTVTheme
-
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.height
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 /**
  * Theme-adaptive "OwnTV" wordmark. The provided logo asset has a near-white "Own" that vanishes on
  * AMOLED black, so the in-app lockup is drawn from brand tokens instead and stays legible on both
@@ -33,43 +37,12 @@ fun BrandLockup(
     markSize: Int = 36,
     textSize: Int = 26,
 ) {
-    val colors = OwnTVTheme.colors
-    val own = stringResource(R.string.brand_own)
-    val tv = stringResource(R.string.brand_tv)
-    Row(
-        modifier = modifier,
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
-    ) {
-        // Rounded-square play mark
-        val markShape = RoundedCornerShape(percent = 28)
-        androidx.compose.foundation.layout.Box(
-            modifier = Modifier
-                .size(markSize.dp)
-                .clip(markShape)
-                .background(colors.card)
-                .border(2.dp, AccentCyan, markShape),
-            contentAlignment = Alignment.Center,
-        ) {
-            OwnTVIcon(
-                icon = OwnTVIcon.PLAY,
-                tint = AccentCyan,
-                filled = true,
-                modifier = Modifier
-                    .padding(start = (markSize * 0.06f).dp)
-                    .size((markSize * 0.5f).dp),
-            )
-        }
-        Text(
-            text = buildAnnotatedString {
-                withStyle(androidx.compose.ui.text.SpanStyle(color = colors.textPrimary, fontWeight = FontWeight.Bold)) {
-                    append(own)
-                }
-                withStyle(androidx.compose.ui.text.SpanStyle(color = AccentCyan, fontWeight = FontWeight.Bold)) {
-                    append(tv)
-                }
-            },
-            fontSize = textSize.sp,
-        )
-    }
+    Image(
+        painter = painterResource(id = R.drawable.owntv_wordmark),
+        contentDescription = "GoatTV",
+        modifier = modifier
+            .width((markSize * 7).dp)
+            .height((markSize * 2.5).dp),
+        contentScale = ContentScale.Fit
+    )
 }

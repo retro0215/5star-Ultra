@@ -461,7 +461,7 @@ class SettingsViewModel(
             source(it).stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), initial)
         }
 
-    val panelWidthEnabled: Map<PanelSection, StateFlow<Boolean>> = panelFlows(settings::panelWidthEnabled, false)
+    val panelWidthEnabled: Map<PanelSection, StateFlow<Boolean>> = panelFlows(settings::panelWidthEnabled, true)
     val panelShares: Map<PanelSection, StateFlow<PanelShares?>> = panelFlows(settings::panelShares, null)
 
     fun setPanelWidths(s: PanelSection, enabled: Boolean, shares: PanelShares) {

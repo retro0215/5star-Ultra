@@ -57,7 +57,7 @@
 
     <!-- Translators: Subtitle on the first-run welcome screen, below the OwnTV brand lockup. -->
     <string name="setup_welcome_to">WELCOME TO</string>
-    <string name="setup_welcome_tagline">Your own IPTV player.</string>
+    <string name="setup_welcome_tagline">Your Entertainment. All In One Place.</string>
     <!-- Translators: Primary action button on the first-run welcome screen. -->
     <string name="setup_get_started">Get Started</string>
     <!-- Translators: Heading on the first-run disclaimer screen shown before the user can proceed. -->

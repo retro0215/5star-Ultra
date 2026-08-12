@@ -480,9 +480,9 @@
     <!-- Translators: Version display on the About screen. 'version' is the version string. -->
     <string name="settings_about_version">Version <xliff:g id="version">%1$s</xliff:g></string>
     <!-- Translators: Full description of OwnTV on the About screen. 'OwnTV' is a brand name. -->
-    <string name="settings_about_description_full">Your own IPTV player for Android TV — a free, open-source, player-only app. It provides no channels or content; you bring your own legally accessible sources.</string>
+    <string name="settings_about_description_full">Live TV*Sports*Movies*Shows GoatTv delivers a fast, simple and premium entertainment experience built for Android TV. </string>
     <!-- Translators: Copyright and license information. 'GPLv3' is a license name. -->
-    <string name="settings_about_license">© 2026 Ashiq Hasan · GPLv3 License</string>
+    <string name="settings_about_license">© 2026 GoatTV · GPLv3 License</string>
     <!-- Translators: Link label to join the Telegram community group. 'Telegram' is a brand name. -->
     <string name="settings_join_telegram">Join us on Telegram</string>
     <!-- Translators: Accessibility label for the Telegram group QR code. -->
@@ -490,7 +490,7 @@
     <!-- Translators: Instructions for joining the Telegram group via QR code. -->
     <string name="settings_telegram_scan">Scan the QR to join from your phone, or open the link above.</string>
     <!-- Translators: Information about contributing to the project. 'GitHub' is a brand name. -->
-    <string name="settings_contributions">Contributions, bug reports &amp; stars are welcome on GitHub.</string>
+    <string name="settings_contributions">goattv.net</string>
     <!-- Translators: Screen title for the playback error log. -->
     <string name="settings_playback_error_title">Playback error log</string>
     <!-- Translators: Description of the playback error log content. -->
