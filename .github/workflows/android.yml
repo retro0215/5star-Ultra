@@ -136,7 +136,7 @@ jobs:
           chmod +x ./gradlew
           if [ -n "$KEYSTORE_FILE" ]; then
             echo "Building signed release APKs (both ABI flavors)"
-            ./gradlew assembleRelease --stacktrace
+            ./gradlew assembleBridge --stacktrace
             # Product flavors split the output by flavor subfolder:
             #   standard/release  -> arm (arm64-v8a + armeabi-v7a) — the main download
             #   x86_64/release    -> x86_64 — emulator / rare x86 box
