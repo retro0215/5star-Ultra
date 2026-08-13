@@ -161,17 +161,7 @@ android {
                 signingConfig = signingConfigs.getByName("release")
             }
         }
-        create("bridge") {
-            initWith(getByName("release"))
 
-            isDebuggable = true
-            isMinifyEnabled = false
-            isShrinkResources = false
-
-            if (releaseKeystore != null) {
-                signingConfig = signingConfigs.getByName("release")
-            }
-        }
     }
 
     buildFeatures {

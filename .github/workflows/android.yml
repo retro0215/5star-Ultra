@@ -136,12 +136,12 @@ jobs:
           chmod +x ./gradlew
           if [ -n "$KEYSTORE_FILE" ]; then
             echo "Building signed release APKs (both ABI flavors)"
-            ./gradlew assembleBridge --stacktrace
+            ./gradlew assembleRelease --stacktrace
             # Product flavors split the output by flavor subfolder:
             #   standard/release  -> arm (arm64-v8a + armeabi-v7a) — the main download
             #   x86_64/release    -> x86_64 — emulator / rare x86 box
-            ARM_SRC=$(ls app/build/outputs/apk/standard/bridge/*.apk | head -n1)
-            X86_SRC=$(ls app/build/outputs/apk/x86_64/bridge/*.apk | head -n1)
+            ARM_SRC=$(ls app/build/outputs/apk/standard/release/*.apk | head -n1)
+            X86_SRC=$(ls app/build/outputs/apk/x86_64/release/*.apk | head -n1)
             echo "Built arm:    $ARM_SRC"
             echo "Built x86_64: $X86_SRC"
             echo "ARM_SRC=$ARM_SRC" >> "$GITHUB_ENV"
