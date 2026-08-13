@@ -367,12 +367,10 @@ fun AddSourceScreen(
                 if (!editing || kind == SourceKind.XTREAM) {
                     KindChip(stringResource(R.string.setup_xtream), kind == SourceKind.XTREAM, Modifier.weight(1f).then(if (!editing) Modifier.focusRequester(firstFocus) else Modifier)) { if (!editing) kind = SourceKind.XTREAM }
                 }
-                if (!editing || kind == SourceKind.M3U) {
-                    KindChip(stringResource(R.string.setup_m3u), kind == SourceKind.M3U, Modifier.weight(1f)) { if (!editing) kind = SourceKind.M3U }
-                }
-                if (onStartStalker != null && (!editing || kind == SourceKind.STALKER)) {
-                    KindChip(stringResource(R.string.setup_stalker_mac), kind == SourceKind.STALKER, Modifier.weight(1f)) { if (!editing) kind = SourceKind.STALKER }
-                }
+
+
+
+
             }
             Spacer(Modifier.height(20.dp))
 
