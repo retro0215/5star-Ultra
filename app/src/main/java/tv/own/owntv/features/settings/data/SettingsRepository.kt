@@ -470,8 +470,8 @@ class SettingsRepository(private val context: Context, private val localeStore: 
         context.dataStore.edit { it[Keys.WEATHER_LOCATION] = location.trim() }
     }
 
-    /** Show the weather temperature in Fahrenheit instead of Celsius (default °C). */
-    val weatherFahrenheit: Flow<Boolean> = prefsFlow { it[Keys.WEATHER_FAHRENHEIT] ?: false }
+    /** Show the weather temperature in Fahrenheit instead of Fahrenheit (default °F). */
+    val weatherFahrenheit: Flow<Boolean> = prefsFlow { it[Keys.WEATHER_FAHRENHEIT] ?: true }
 
     suspend fun setWeatherFahrenheit(fahrenheit: Boolean) {
         context.dataStore.edit { it[Keys.WEATHER_FAHRENHEIT] = fahrenheit }
