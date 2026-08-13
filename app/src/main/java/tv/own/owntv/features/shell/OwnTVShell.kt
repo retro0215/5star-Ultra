@@ -1008,6 +1008,7 @@ fun OwnTVShell(
         }
 
         val updateManager = koinInject<UpdateManager>()
+        val updateState by updateManager.state.collectAsStateWithLifecycle()
         var showStartupToast by remember { mutableStateOf(false) }
         var showChangelog by remember { mutableStateOf(false) }
         val settingsRepo = koinInject<tv.own.owntv.features.settings.data.SettingsRepository>()
@@ -1017,6 +1018,12 @@ fun OwnTVShell(
                 kotlinx.coroutines.delay(5_000)
                 showStartupToast = true
                 updateManager.check()
+            }
+        }
+        LaunchedEffect(updateState) {
+            if (showStartupToast && updateState is UpdateManager.State.Available) {
+                showStartupToast = false
+                showChangelog = true
             }
         }
         if (showChangelog) {
