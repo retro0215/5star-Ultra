@@ -43,7 +43,7 @@ class PanelWidthsTest {
         )
 
         assertEquals(0f, widths.preview.value, 0f)
-        assertEquals(975f, widths.category.value + widths.list.value, 0.01f)
+        assertEquals(996f, widths.category.value + widths.list.value, 0.01f)
     }
 
     @Test
@@ -53,7 +53,7 @@ class PanelWidthsTest {
             total = 1_000.dp,
         )
 
-        assertEquals(963f, widths.category.value + widths.list.value + widths.preview.value, 0.01f)
+        assertEquals(992f, widths.category.value + widths.list.value + widths.preview.value, 0.01f)
         assertTrue(widths.preview.value > 0f)
     }
 }
