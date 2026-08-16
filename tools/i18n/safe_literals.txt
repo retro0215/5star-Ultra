@@ -2636,10 +2636,9 @@
 1	technical	app/src/main/java/tv/own/owntv/core/update/UpdateManager.kt	${context.packageName}.fileprovider
 1	technical	app/src/main/java/tv/own/owntv/core/update/UpdateManager.kt	.apk
 1	technical	app/src/main/java/tv/own/owntv/core/update/UpdateManager.kt	Accept
-2	technical	app/src/main/java/tv/own/owntv/core/update/UpdateManager.kt	OwnTV
+1	technical	app/src/main/java/tv/own/owntv/core/update/UpdateManager.kt	OwnTV
 1	log	app/src/main/java/tv/own/owntv/core/update/UpdateManager.kt	UpdateManager
 2	technical	app/src/main/java/tv/own/owntv/core/update/UpdateManager.kt	User-Agent
-1	technical	app/src/main/java/tv/own/owntv/core/update/UpdateManager.kt	ahXN00/OwnTV
 1	mime	app/src/main/java/tv/own/owntv/core/update/UpdateManager.kt	application/vnd.android.package-archive
 1	mime	app/src/main/java/tv/own/owntv/core/update/UpdateManager.kt	application/vnd.github+json
 1	json	app/src/main/java/tv/own/owntv/core/update/UpdateManager.kt	assets
@@ -2647,7 +2646,6 @@
 1	json	app/src/main/java/tv/own/owntv/core/update/UpdateManager.kt	browser_download_url
 1	url	app/src/main/java/tv/own/owntv/core/update/UpdateManager.kt	https://api.github.com/repos/$REPO/releases/latest
 1	json	app/src/main/java/tv/own/owntv/core/update/UpdateManager.kt	name
-1	file-path	app/src/main/java/tv/own/owntv/core/update/UpdateManager.kt	owntv-update.apk
 1	json	app/src/main/java/tv/own/owntv/core/update/UpdateManager.kt	tag_name
 1	log	app/src/main/java/tv/own/owntv/core/update/UpdateManager.kt	update check failed: ${error.message}
 1	log	app/src/main/java/tv/own/owntv/core/update/UpdateManager.kt	update download failed: ${error.message}
@@ -3244,7 +3242,7 @@
 1	preference-key	app/src/main/java/tv/own/owntv/features/settings/data/SettingsRepository.kt	weather_enabled
 1	preference-key	app/src/main/java/tv/own/owntv/features/settings/data/SettingsRepository.kt	weather_fahrenheit
 1	preference-key	app/src/main/java/tv/own/owntv/features/settings/data/SettingsRepository.kt	weather_location
-14	empty	app/src/main/java/tv/own/owntv/features/setup/AddSourceScreen.kt	\0
+12	empty	app/src/main/java/tv/own/owntv/features/setup/AddSourceScreen.kt	\0
 1	technical	app/src/main/java/tv/own/owntv/features/setup/AddSourceScreen.kt	/
 1	technical	app/src/main/java/tv/own/owntv/features/setup/AddSourceScreen.kt	Mozilla/5.0 (QtEmbedded; U; Linux; C) AppleWebKit/533.3 (KHTML, like Gecko) MAG250 stbapp ver: 2 rev: 250 Safari/533.3
 1	technical	app/src/main/java/tv/own/owntv/features/setup/AddSourceScreen.kt	Mozilla/5.0 (QtEmbedded; U; Linux; C) AppleWebKit/533.3 (KHTML, like Gecko) MAG254 stbapp ver: 2 rev: 250 Safari/533.3
