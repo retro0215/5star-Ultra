@@ -176,6 +176,13 @@
     <string name="companion_pin_aria">PIN</string>
     <string name="companion_continue">Continua</string>
     <string name="companion_pin_mismatch">Il PIN non corrisponde: riprova.</string>
+    <string name="companion_tmdb_page_title">Invia chiave TMDB</string>
+    <string name="companion_tmdb_heading">Invia la tua chiave TMDB</string>
+    <string name="companion_tmdb_description">Accedi a TMDB qui sotto, copia la tua chiave API (v3 auth), incollala qui e inviala alla TV. Una chiave personale è gratuita e non ha praticamente alcun limite giornaliero.</string>
+    <string name="companion_tmdb_get_key">Apri le impostazioni API di TMDB</string>
+    <string name="companion_tmdb_invalid">Non sembra una chiave API TMDB. Copia il valore «API Key (v3 auth)».</string>
+    <string name="companion_tmdb_sent_body">La tua chiave TMDB è ora sulla TV. Premi Salva per iniziare a usarla.</string>
+    <string name="companion_tmdb_sent_link">Invia un’altra chiave</string>
     <string name="companion_add_page_title">OwnTV — Aggiungi fonte</string>
     <string name="companion_add_heading">Aggiungi una fonte</string>
     <string name="companion_add_description">Inserisci i dati di una fonte e premi Invia. Apparirà sulla TV: quando sei pronto, prendi il telecomando e premi Avvia importazione sulla TV.</string>
@@ -196,6 +203,8 @@
     <string name="companion_backup_description">Scegli un file di backup di OwnTV (.own oppure un precedente .json) e premi Invia. Verrà trasferito alla TV: prendi il telecomando e scegli lì cosa ripristinare.</string>
     <string name="companion_backup_file">File di backup</string>
     <string name="companion_choose_backup">Prima scegli un file di backup.</string>
+    <string name="companion_playlist_file">Oppure carica un file di playlist</string>
+    <string name="companion_playlist_url_or_file">Inserisci un URL della playlist o scegli un file.</string>
     <string name="companion_sending">Invio in corso…</string>
     <string name="companion_upload_failed">Caricamento non riuscito (HTTP <xliff:g id="status">%1$d</xliff:g>). Controlla il PIN e riprova.</string>
     <string name="companion_could_not_reach">Impossibile raggiungere la TV. Rimani connesso alla stessa Wi-Fi e riprova.</string>

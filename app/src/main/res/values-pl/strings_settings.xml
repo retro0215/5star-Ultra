@@ -94,12 +94,25 @@
     <string name="settings_metadata_provider_tmdb_description">Pierwszeństwo mają informacje z listy odtwarzania; TMDB uzupełnia braki oraz dodaje obsadę, gatunki i tła.</string>
     <string name="settings_metadata_tmdb_only_description">Preferuj TMDB dla każdego pola; używaj listy odtwarzania tylko wtedy, gdy TMDB nie zawiera żadnych danych.</string>
     <string name="settings_selected">Wybrano</string>
-    <string name="settings_active_tmdb_source">Aktywne źródło TMDB: <xliff:g id="tier">%1$s</xliff:g></string>
+    <string name="settings_metadata_allowance">Twój dzienny przydział</string>
+    <string name="settings_metadata_usage_label">Zużycie</string>
+    <string name="settings_metadata_usage_value"><xliff:g id="min_used">%1$d</xliff:g>/<xliff:g id="min_total">%2$d</xliff:g> min · <xliff:g id="hr_used">%3$d</xliff:g>/<xliff:g id="hr_total">%4$d</xliff:g> godz. · <xliff:g id="day_used">%5$d</xliff:g>/<xliff:g id="day_total">%6$d</xliff:g> dzień</string>
+    <string name="settings_metadata_source_label">Źródło</string>
+    <string name="settings_metadata_key_label">Klucz</string>
+    <string name="settings_metadata_server_label">Serwer</string>
+    <string name="settings_metadata_refills_label">Odnowi się o</string>
+    <string name="settings_metadata_clear_advanced_title">Przestać używać własnego klucza?</string>
+    <string name="settings_metadata_clear_advanced_message">Twój klucz API TMDB i adres własnego serwera zostaną usunięte z tego urządzenia, a OwnTV wróci do wbudowanej usługi współdzielonej z jej dziennym przydziałem.</string>
+    <string name="settings_metadata_fair_share">Wbudowana usługa metadanych jest współdzielona przez wszystkich użytkowników OwnTV, więc każde urządzenie otrzymuje każdego dnia własny przydział. Po jego wyczerpaniu plakaty i opisy zostają wstrzymane do czasu odnowienia — informacje z Twojej własnej playlisty działają normalnie. Dodanie własnego klucza API TMDB lub serwera usuwa ten limit: jest bezpłatny, a klucz osobisty praktycznie nie ma limitu.</string>
+    <string name="settings_metadata_limit_reached">Dzienny przydział metadanych wyczerpany — dodaj własny klucz TMDB w Ustawieniach → Metadane, aby usunąć ten limit.</string>
     <string name="settings_metadata_language">Język metadanych</string>
-    <string name="settings_metadata_language_description">Język opisów fabuły, gatunków i tytułów z TMDB. Pola nieprzetłumaczone przez TMDB pozostają w języku angielskim. Zmiana tego ustawienia usuwa szczegóły z pamięci podręcznej, aby pobrać je ponownie.</string>
+    <string name="settings_metadata_language_description">Język opisów, gatunków i tytułów z TMDB. Pola, których TMDB nie przetłumaczyło, pozostają po angielsku. Szczegóły są zapisywane w pamięci podręcznej dla każdego języka, więc powrót jest natychmiastowy.</string>
     <string name="settings_advanced_options">Opcje zaawansowane</string>
     <string name="settings_advanced_metadata_description">Używaj własnego klucza API TMDB lub samodzielnie hostowanego serwera zamiast domyślnego serwera współdzielonego.</string>
     <string name="settings_metadata_server_description">Pozostaw oba pola puste, aby używać wbudowanego serwera współdzielonego (bez konfiguracji). Wprowadź własny klucz API TMDB, aby łączyć się bezpośrednio z TMDB, albo adres URL samodzielnie hostowanego serwera, aby używać własnego serwera proxy lub kopii lustrzanej. Adres URL ma pierwszeństwo przed kluczem.</string>
+    <string name="settings_metadata_key_from_phone">Pobierz klucz z telefonu</string>
+    <string name="settings_metadata_key_from_phone_desc">Zeskanuj kod telefonem, zaloguj się tam do TMDB i wyślij klucz. Nic nie trzeba wpisywać pilotem.</string>
+    <string name="settings_metadata_key_received">Odebrano klucz TMDB z telefonu</string>
     <string name="settings_tmdb_api_key">Klucz API TMDB (v3)</string>
     <string name="settings_self_host_url">Adres URL własnego serwera</string>
     <string name="settings_test">Test</string>
@@ -353,11 +366,47 @@
     <string name="settings_decoding">Dekodowanie</string>
     <string name="settings_hardware_decoding">Dekodowanie sprzętowe</string>
     <string name="settings_hardware_decoding_description">Używaj dekodera sprzętowego telewizora. Wyłącz, jeśli niektóre strumienie się zacinają lub wyświetlają artefakty.</string>
+    <!-- Translators: Setting label for deinterlacing of interlaced broadcast video. -->
+    <string name="settings_deinterlace">Usuwanie przeplotu</string>
+    <!-- Translators: Description of the deinterlacing setting. -->
+    <string name="settings_deinterlace_description">Wygładza grzebieniowe linie, które niektóre stare kanały SD pokazują przy ruchu. Dotyczy silnika mpv, gdy sam rysuje obraz — jeśli nic się nie zmienia, wyłącz dekodowanie sprzętowe.</string>
     <string name="settings_movies_series_player">Odtwarzacz filmów i seriali</string>
+    <string name="settings_live_tv_player">Odtwarzacz telewizji na żywo</string>
+    <string name="settings_engine_order"><xliff:g id="first">%1$s</xliff:g>, potem <xliff:g id="second">%2$s</xliff:g></string>
+    <string name="settings_engine_only">Tylko <xliff:g id="engine">%1$s</xliff:g></string>
+    <string name="settings_engine_default"><xliff:g id="option">%1$s</xliff:g> (domyślnie)</string>
     <string name="settings_reset_player_choices">Resetuj zapisane wybory odtwarzacza</string>
     <string name="settings_external_player">Odtwarzacz zewnętrzny</string>
     <string name="settings_default_zoom">Domyślne powiększenie</string>
     <string name="settings_default_zoom_description">Proporcje obrazu/powiększenie stosowane po rozpoczęciu odtwarzania.</string>
+    <!-- Translators: Setting label for the volume level playback starts at. -->
+    <string name="settings_default_volume">Domyślna głośność</string>
+    <!-- Translators: Description of the default volume setting. -->
+    <string name="settings_default_volume_description">Głośność stosowana po rozpoczęciu odtwarzania. Powyżej 100%% ciche transmisje są wzmacniane.</string>
+    <!-- Translators: Settings-row title for forgetting the zoom saved for individual items. -->
+    <string name="settings_reset_saved_zoom">Resetuj zapisane powiększenie</string>
+    <!-- Translators: Description of the reset-saved-zoom setting row. -->
+    <string name="settings_reset_saved_zoom_description">Zmiana powiększenia w odtwarzaczu zapisuje je dla danego kanału, filmu lub odcinka. Reset sprawia, że wszystko znów stosuje domyślne powiększenie.</string>
+    <!-- Translators: Confirmation dialog title before forgetting the saved per-item zoom. -->
+    <string name="settings_reset_saved_zoom_confirm">Zresetować zapisane powiększenie?</string>
+    <!-- Translators: Confirmation dialog body before forgetting the saved per-item zoom. -->
+    <string name="settings_reset_saved_zoom_confirm_description">Każdy kanał, film i odcinek wróci do domyślnego powiększenia. Zapisane poziomy głośności zostaną zachowane. Pojedynczą pozycję zawsze możesz ustawić ponownie w odtwarzaczu.</string>
+    <!-- Translators: Settings-row title for forgetting the volume saved for individual items. -->
+    <string name="settings_reset_saved_volume">Resetuj zapisaną głośność</string>
+    <!-- Translators: Description of the reset-saved-volume setting row. -->
+    <string name="settings_reset_saved_volume_description">Zmiana głośności w odtwarzaczu zapisuje ją dla danego kanału, filmu lub odcinka. Reset sprawia, że wszystko znów stosuje domyślną głośność.</string>
+    <!-- Translators: Confirmation dialog title before forgetting the saved per-item volume. -->
+    <string name="settings_reset_saved_volume_confirm">Zresetować zapisaną głośność?</string>
+    <!-- Translators: Confirmation dialog body before forgetting the saved per-item volume. -->
+    <string name="settings_reset_saved_volume_confirm_description">Każdy kanał, film i odcinek wróci do domyślnej głośności. Zapisane ustawienia powiększenia zostaną zachowane. Pojedynczą pozycję zawsze możesz ustawić ponownie w odtwarzaczu.</string>
+    <!-- Translators: Setting label for how far rewind/forward jumps in a movie or episode. -->
+    <string name="settings_seek_step">Krok przewijania</string>
+    <!-- Translators: Description of the seek step setting. -->
+    <string name="settings_seek_step_description">O ile przewijanie do tyłu i do przodu przeskakuje w filmie lub odcinku.</string>
+    <!-- Translators: Setting label for how far rewind/forward jumps inside a live channel's archive. -->
+    <string name="settings_live_rewind_step">Krok przewijania na żywo</string>
+    <!-- Translators: Description of the live rewind step setting. -->
+    <string name="settings_live_rewind_step_description">O ile przewijanie do tyłu i do przodu przesuwa się w archiwum kanału na żywo.</string>
     <string name="settings_resume_playback">Wznów odtwarzanie</string>
     <string name="settings_resume_playback_description">Działanie, gdy film lub odcinek ma zapisaną pozycję.</string>
     <string name="settings_subtitles">Napisy</string>
@@ -372,7 +421,7 @@
     <string name="settings_audio">Dźwięk</string>
     <string name="settings_preferred_audio_language">Preferowany język dźwięku</string>
     <string name="settings_audio_sync">Synchronizacja dźwięku</string>
-    <string name="settings_audio_sync_description">Przesuń dźwięk wcześniej lub później, aby dopasować go do obrazu.</string>
+    <string name="settings_audio_sync_description">Przesuń dźwięk wcześniej lub później, aby dopasować go do obrazu. Dotyczy tylko silnika mpv.</string>
     <string name="settings_live_tv">Telewizja na żywo</string>
     <string name="settings_live_latency_description">Określa, jak blisko bieżącego punktu transmisji ma odbywać się odtwarzanie. Niższa wartość oznacza mniejsze opóźnienie, ale też mniejszy bufor, dlatego niestabilne strumienie mogą częściej się zacinać lub ponownie łączyć. Zmiana zostanie zastosowana do następnego otwartego kanału.</string>
     <string name="settings_channel_numbers">Numery kanałów</string>
@@ -400,7 +449,8 @@
     <string name="settings_audio_delay"><xliff:g id="delay">%1$d</xliff:g> ms</string>
     <string name="settings_external_player_description">Wybierz sekcje, które mają być otwierane w aplikacji zewnętrznej.</string>
     <string name="settings_audio_delay_value"><xliff:g id="delay">%1$d</xliff:g> ms</string>
-    <string name="settings_movies_player_description">mpv (zalecany) obsługuje najwięcej formatów — dźwięk DTS/TrueHD, nietypowe pliki — oraz umożliwia korektę synchronizacji dźwięku i obrazu. Przełącz na ExoPlayer tylko wtedy, gdy nie można uruchomić filmu lub odcinka: na niektórych telewizorach odtwarza on strumienie, których mpv nie obsługuje, ale nie dekoduje dźwięku DTS/TrueHD i nie umożliwia korekty synchronizacji dźwięku i obrazu. Niezależnie od wyboru w razie błędu automatycznie zostanie wypróbowany drugi odtwarzacz.</string>
+    <string name="settings_movies_player_description">mpv (zalecany) obsługuje najwięcej formatów — dźwięk DTS/TrueHD, nietypowe pliki — a do tego poprawia synchronizację dźwięku i obrazu. Na niektórych telewizorach ExoPlayer odtwarza strumienie, z którymi mpv sobie nie radzi, ale nie dekoduje dźwięku DTS/TrueHD i nie poprawia synchronizacji. Opcje łączone automatycznie próbują drugiego odtwarzacza, gdy pierwszy zawiedzie; opcje z jednym odtwarzaczem nie robią tego nigdy, co oszczędza kilka sekund czarnego ekranu, jeśli drugi odtwarzacz i tak nie działa na Twoim telewizorze.</string>
+    <string name="settings_live_player_description">ExoPlayer (zalecany) otwiera kanały znacznie szybciej i jako jedyny obsługuje napisy na żywo. mpv odtwarza kanały, z którymi ExoPlayer sobie nie radzi, w tym niektóre z nietypowym dźwiękiem. Opcje łączone automatycznie próbują drugiego odtwarzacza, gdy pierwszy zawiedzie; opcje z jednym odtwarzaczem nie robią tego nigdy, co oszczędza kilka sekund czarnego ekranu, jeśli drugi odtwarzacz i tak nie działa na Twoim telewizorze. W kanale przełączonym ręcznie w odtwarzaczu Twój wybór zostaje zachowany w obu przypadkach.</string>
     <string name="settings_reset_player_choices_description">Przełączenie pojedynczego filmu lub odcinka między mpv a ExoPlayerem w odtwarzaczu zapisuje ten wybór na następny raz. Reset sprawia, że wszystko znów stosuje ustawienie powyżej. Zapisane wybory dla kanałów na żywo zostają zachowane.</string>
     <string name="settings_reset_player_choices_none">Nic nie zapisano</string>
     <plurals name="settings_reset_player_choices_count">
@@ -653,7 +703,7 @@
     <string name="settings_backup_what_backup">Dane do zapisania w kopii zapasowej</string>
     <string name="settings_backup_what_restore">Dane do przywrócenia</string>
     <string name="settings_backup_encrypt_title">Zaszyfrować tę kopię zapasową?</string>
-    <string name="settings_backup_encrypt_message">Jeśli ustawisz hasło kopii zapasowej, cały plik zostanie zaszyfrowany — łącznie z listami odtwarzania, profilami i zapisanymi hasłami — i bez tego hasła nie będzie można odczytać żadnych zawartych w nim danych. Przechowuj je bezpiecznie: jeśli je utracisz, kopii zapasowej nie będzie można w ogóle otworzyć. Bez hasła plik nie będzie szyfrowany, a zapisane hasła nie zostaną w nim uwzględnione.</string>
+    <string name="settings_backup_encrypt_message">Jeśli ustawisz hasło kopii zapasowej, cały plik zostanie zaszyfrowany — łącznie z listami odtwarzania, profilami i zapisanymi hasłami — i bez tego hasła nie będzie można odczytać żadnych zawartych w nim danych. Przechowuj je bezpiecznie: jeśli je utracisz, kopii zapasowej nie będzie można w ogóle otworzyć. Bez hasła plik nie będzie szyfrowany, a zapisane hasła i kody PIN nie zostaną w nim uwzględnione.</string>
     <string name="settings_backup_export_title">Eksport kopii zapasowej</string>
     <string name="settings_backup_export_message">Wyślij kopię zapasową na inne urządzenie (telefon lub laptop) połączone z tą samą siecią Wi-Fi albo zapisz ją w pliku na tym urządzeniu.</string>
     <string name="settings_backup_restore_title">Przywracanie kopii zapasowej</string>
@@ -702,7 +752,7 @@
     <string name="settings_backup_section_settings">Ustawienia aplikacji</string>
     <string name="settings_backup_section_settings_desc">Preferencje motywu, koloru akcentu, odtwarzacza i układu</string>
     <string name="settings_backup_saved_to">Zapisano w <xliff:g id="path">%1$s</xliff:g>.</string>
-    <string name="settings_backup_saved_to_without_passwords">Zapisano w <xliff:g id="path">%1$s</xliff:g>. Hasła nie zostały uwzględnione.</string>
+    <string name="settings_backup_saved_to_without_passwords">Zapisano w <xliff:g id="path">%1$s</xliff:g>. Hasła i kody PIN nie zostały uwzględnione.</string>
     <plurals name="settings_backup_restored">
         <item quantity="one">Przywrócono <xliff:g id="items">%1$d</xliff:g> element.</item>
         <item quantity="few">Przywrócono <xliff:g id="items">%1$d</xliff:g> elementy.</item>
@@ -710,7 +760,7 @@
         <item quantity="other">Przywrócono <xliff:g id="items">%1$d</xliff:g> elementu.</item>
     </plurals>
     <string name="settings_backup_restore_resync">Ponownie zsynchronizuj źródła, aby wczytać treści.</string>
-    <string name="settings_backup_restore_password_note">Ponownie wprowadź zapisane hasła w sekcji Źródła/Proxy.</string>
+    <string name="settings_backup_restore_password_note">Ponownie wprowadź zapisane hasła oraz kody PIN profili w sekcji Źródła/Proxy.</string>
     <plurals name="settings_backup_skipped_sources">
         <item quantity="one">Pominięto <xliff:g id="count">%1$d</xliff:g> źródło, ponieważ typ jego listy odtwarzania nie jest obsługiwany.</item>
         <item quantity="few">Pominięto <xliff:g id="count">%1$d</xliff:g> źródła, ponieważ typy ich list odtwarzania nie są obsługiwane.</item>
@@ -943,6 +993,8 @@
     <string name="settings_font_preview">Rozrywka w prostym wydaniu.</string>
     <string name="settings_search_keywords_fonts">czcionka tekst rozmiar typografia okno czytanie dostępność</string>
     <string name="settings_font_system_sans">Systemowa bezszeryfowa</string>
+    <string name="settings_font_monospace">Stała szerokość</string>
+    <string name="settings_subtitle_font">Czcionka napisów</string>
     <string name="settings_glass_preset_title">Ustawienie wyglądu</string>
     <string name="settings_glass_preset_clear">Przejrzyste</string>
     <string name="settings_glass_preset_balanced">Zrównoważone</string>

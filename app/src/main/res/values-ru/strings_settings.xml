@@ -94,12 +94,25 @@
     <string name="settings_metadata_provider_tmdb_description">Данные из вашего плейлиста имеют приоритет; TMDB заполняет пробелы и добавляет актёрский состав, жанры и фоновые изображения.</string>
     <string name="settings_metadata_tmdb_only_description">Предпочитать TMDB для каждого поля; использовать данные из плейлиста, только если в TMDB ничего нет.</string>
     <string name="settings_selected">Выбрано</string>
-    <string name="settings_active_tmdb_source">Активный источник TMDB: <xliff:g id="tier">%1$s</xliff:g></string>
+    <string name="settings_metadata_allowance">Ваша дневная доля</string>
+    <string name="settings_metadata_usage_label">Использование</string>
+    <string name="settings_metadata_usage_value"><xliff:g id="min_used">%1$d</xliff:g>/<xliff:g id="min_total">%2$d</xliff:g> мин · <xliff:g id="hr_used">%3$d</xliff:g>/<xliff:g id="hr_total">%4$d</xliff:g> ч · <xliff:g id="day_used">%5$d</xliff:g>/<xliff:g id="day_total">%6$d</xliff:g> день</string>
+    <string name="settings_metadata_source_label">Источник</string>
+    <string name="settings_metadata_key_label">Ключ</string>
+    <string name="settings_metadata_server_label">Сервер</string>
+    <string name="settings_metadata_refills_label">Обновится в</string>
+    <string name="settings_metadata_clear_advanced_title">Перестать использовать свой ключ?</string>
+    <string name="settings_metadata_clear_advanced_message">Ваш ключ API TMDB и адрес вашего сервера будут удалены с этого устройства, а OwnTV вернётся к встроенному общему сервису с его дневной долей.</string>
+    <string name="settings_metadata_fair_share">Встроенный сервис метаданных используется всеми пользователями OwnTV, поэтому каждое устройство получает собственную дневную долю. Если вы израсходуете свою долю, постеры и описания приостановятся до её обновления — информация из вашего собственного плейлиста продолжит работать как обычно. Собственный ключ API TMDB или сервер снимает это ограничение: он бесплатный, а у личного ключа практически нет лимита.</string>
+    <string name="settings_metadata_limit_reached">Дневная доля метаданных израсходована — добавьте собственный ключ TMDB в разделе «Настройки → Метаданные», чтобы снять это ограничение.</string>
     <string name="settings_metadata_language">Язык метаданных</string>
-    <string name="settings_metadata_language_description">Язык описаний, жанров и названий из TMDB. Поля, которые TMDB не перевёл, останутся на английском языке. При изменении этого параметра кэшированные сведения удаляются и загружаются заново.</string>
+    <string name="settings_metadata_language_description">Язык описаний, жанров и названий из TMDB. Поля, которые TMDB не перевёл, останутся на английском. Подробности кэшируются для каждого языка, поэтому переключение обратно происходит мгновенно.</string>
     <string name="settings_advanced_options">Дополнительные параметры</string>
     <string name="settings_advanced_metadata_description">Используйте собственный ключ API TMDB или самостоятельно размещённый сервер вместо общего сервера по умолчанию.</string>
     <string name="settings_metadata_server_description">Оставьте оба поля пустыми, чтобы использовать встроенный общий сервер без дополнительной настройки. Введите собственный ключ API TMDB для прямых запросов к TMDB или URL самостоятельно размещённого сервера, чтобы использовать собственный прокси или зеркало. URL имеет приоритет над ключом.</string>
+    <string name="settings_metadata_key_from_phone">Получить ключ с телефона</string>
+    <string name="settings_metadata_key_from_phone_desc">Отсканируйте код телефоном, войдите там в TMDB и отправьте ключ. На пульте ничего вводить не нужно.</string>
+    <string name="settings_metadata_key_received">Ключ TMDB получен с телефона</string>
     <string name="settings_tmdb_api_key">Ключ API TMDB (v3)</string>
     <string name="settings_self_host_url">URL самостоятельно размещённого сервера</string>
     <string name="settings_test">Проверка</string>
@@ -353,11 +366,47 @@
     <string name="settings_decoding">Декодирование</string>
     <string name="settings_hardware_decoding">Аппаратное декодирование</string>
     <string name="settings_hardware_decoding_description">Использовать аппаратный декодер телевизора. Отключите, если некоторые потоки воспроизводятся с рывками или артефактами.</string>
+    <!-- Translators: Setting label for deinterlacing of interlaced broadcast video. -->
+    <string name="settings_deinterlace">Деинтерлейсинг</string>
+    <!-- Translators: Description of the deinterlacing setting. -->
+    <string name="settings_deinterlace_description">Сглаживает гребёнку, которую некоторые старые SD-каналы показывают при движении. Действует в плеере mpv, пока он сам рисует изображение, — если разницы нет, отключите аппаратное декодирование.</string>
     <string name="settings_movies_series_player">Плеер фильмов и сериалов</string>
+    <string name="settings_live_tv_player">Плеер прямого эфира</string>
+    <string name="settings_engine_order"><xliff:g id="first">%1$s</xliff:g>, затем <xliff:g id="second">%2$s</xliff:g></string>
+    <string name="settings_engine_only">Только <xliff:g id="engine">%1$s</xliff:g></string>
+    <string name="settings_engine_default"><xliff:g id="option">%1$s</xliff:g> (по умолчанию)</string>
     <string name="settings_reset_player_choices">Сбросить сохранённый выбор плеера</string>
     <string name="settings_external_player">Внешний плеер</string>
     <string name="settings_default_zoom">Масштаб по умолчанию</string>
     <string name="settings_default_zoom_description">Соотношение сторон и масштаб, применяемые при запуске воспроизведения.</string>
+    <!-- Translators: Setting label for the volume level playback starts at. -->
+    <string name="settings_default_volume">Громкость по умолчанию</string>
+    <!-- Translators: Description of the default volume setting. -->
+    <string name="settings_default_volume_description">Громкость, применяемая при запуске воспроизведения. Выше 100 %% тихие потоки усиливаются.</string>
+    <!-- Translators: Settings-row title for forgetting the zoom saved for individual items. -->
+    <string name="settings_reset_saved_zoom">Сбросить сохранённый масштаб</string>
+    <!-- Translators: Description of the reset-saved-zoom setting row. -->
+    <string name="settings_reset_saved_zoom_description">Изменение масштаба в плеере сохраняется для этого канала, фильма или серии. Сброс возвращает всё к масштабу по умолчанию.</string>
+    <!-- Translators: Confirmation dialog title before forgetting the saved per-item zoom. -->
+    <string name="settings_reset_saved_zoom_confirm">Сбросить сохранённый масштаб?</string>
+    <!-- Translators: Confirmation dialog body before forgetting the saved per-item zoom. -->
+    <string name="settings_reset_saved_zoom_confirm_description">Все каналы, фильмы и серии вернутся к масштабу по умолчанию. Сохранённые уровни громкости останутся. Отдельный элемент всегда можно настроить заново прямо в плеере.</string>
+    <!-- Translators: Settings-row title for forgetting the volume saved for individual items. -->
+    <string name="settings_reset_saved_volume">Сбросить сохранённую громкость</string>
+    <!-- Translators: Description of the reset-saved-volume setting row. -->
+    <string name="settings_reset_saved_volume_description">Изменение громкости в плеере сохраняется для этого канала, фильма или серии. Сброс возвращает всё к громкости по умолчанию.</string>
+    <!-- Translators: Confirmation dialog title before forgetting the saved per-item volume. -->
+    <string name="settings_reset_saved_volume_confirm">Сбросить сохранённую громкость?</string>
+    <!-- Translators: Confirmation dialog body before forgetting the saved per-item volume. -->
+    <string name="settings_reset_saved_volume_confirm_description">Все каналы, фильмы и серии вернутся к громкости по умолчанию. Сохранённые настройки масштаба останутся. Отдельный элемент всегда можно настроить заново прямо в плеере.</string>
+    <!-- Translators: Setting label for how far rewind/forward jumps in a movie or episode. -->
+    <string name="settings_seek_step">Шаг перемотки</string>
+    <!-- Translators: Description of the seek step setting. -->
+    <string name="settings_seek_step_description">На сколько перематывают назад и вперёд в фильме или серии.</string>
+    <!-- Translators: Setting label for how far rewind/forward jumps inside a live channel's archive. -->
+    <string name="settings_live_rewind_step">Шаг перемотки эфира</string>
+    <!-- Translators: Description of the live rewind step setting. -->
+    <string name="settings_live_rewind_step_description">На сколько перематывают назад и вперёд внутри архива канала прямого эфира.</string>
     <string name="settings_resume_playback">Продолжить воспроизведение</string>
     <string name="settings_resume_playback_description">Что делать, если для фильма или серии сохранена позиция.</string>
     <string name="settings_subtitles">Субтитры</string>
@@ -372,7 +421,7 @@
     <string name="settings_audio">Звук</string>
     <string name="settings_preferred_audio_language">Предпочитаемый язык звука</string>
     <string name="settings_audio_sync">Синхронизация звука</string>
-    <string name="settings_audio_sync_description">Сдвигайте звук вперёд или назад, чтобы синхронизировать его с видео.</string>
+    <string name="settings_audio_sync_description">Сдвигайте звук вперёд или назад, чтобы синхронизировать его с видео. Применяется только к движку mpv.</string>
     <string name="settings_live_tv">Прямой эфир</string>
     <string name="settings_live_latency_description">Насколько близко к текущей позиции эфира вести воспроизведение. Чем ниже задержка, тем ближе воспроизведение к прямому эфиру, но тем меньше буфер, поэтому слабые потоки могут чаще прерываться или переподключаться. Применяется к следующему открытому каналу.</string>
     <string name="settings_channel_numbers">Номера каналов</string>
@@ -400,7 +449,8 @@
     <string name="settings_audio_delay"><xliff:g id="delay">%1$d</xliff:g> мс</string>
     <string name="settings_external_player_description">Выберите разделы, которые будут открываться во внешнем приложении.</string>
     <string name="settings_audio_delay_value"><xliff:g id="delay">%1$d</xliff:g> мс</string>
-    <string name="settings_movies_player_description">mpv (рекомендуется) поддерживает больше всего форматов — звук DTS/TrueHD, нестандартные файлы — и позволяет исправлять рассинхронизацию звука и видео. Переключайтесь на ExoPlayer, только если фильмы или серии не запускаются: на некоторых телевизорах он воспроизводит отдельные потоки, с которыми не справляется mpv, но не может декодировать звук DTS/TrueHD и не позволяет исправить рассинхронизацию звука и видео. Независимо от выбора, при сбое автоматически будет опробован другой плеер.</string>
+    <string name="settings_movies_player_description">mpv (рекомендуется) поддерживает больше всего форматов — звук DTS/TrueHD, необычные файлы — и исправляет рассинхрон звука и видео. На некоторых телевизорах ExoPlayer воспроизводит потоки, которые не даются mpv, но он не декодирует звук DTS/TrueHD и не исправляет рассинхрон. Комбинированные варианты автоматически пробуют второй плеер, когда первый не справился; варианты с одним плеером не делают этого никогда, что экономит несколько секунд чёрного экрана, если второй плеер на вашем телевизоре всё равно не работает.</string>
+    <string name="settings_live_player_description">ExoPlayer (рекомендуется) открывает каналы намного быстрее и единственный поддерживает субтитры в прямом эфире. mpv воспроизводит каналы, которые не даются ExoPlayer, в том числе некоторые с необычным звуком. Комбинированные варианты автоматически пробуют второй плеер, когда первый не справился; варианты с одним плеером не делают этого никогда, что экономит несколько секунд чёрного экрана, если второй плеер на вашем телевизоре всё равно не работает. На канале, переключённом вручную в плеере, ваш выбор сохраняется в любом случае.</string>
     <string name="settings_reset_player_choices_description">Если переключить отдельный фильм или серию между mpv и ExoPlayer прямо в плеере, этот выбор сохраняется на следующий раз. Сброс возвращает всё к настройке выше. Сохранённый выбор для каналов прямого эфира остаётся.</string>
     <string name="settings_reset_player_choices_none">Ничего не сохранено</string>
     <plurals name="settings_reset_player_choices_count">
@@ -653,7 +703,7 @@
     <string name="settings_backup_what_backup">Что включить в резервную копию</string>
     <string name="settings_backup_what_restore">Что восстановить</string>
     <string name="settings_backup_encrypt_title">Зашифровать эту резервную копию?</string>
-    <string name="settings_backup_encrypt_message">Если установить пароль резервной копии, весь файл будет зашифрован — включая плейлисты, профили и сохранённые пароли — и без этого пароля прочитать его содержимое будет невозможно. Храните пароль в надёжном месте: если вы его потеряете, резервную копию нельзя будет открыть. Без пароля файл не шифруется, а сохранённые пароли в него не включаются.</string>
+    <string name="settings_backup_encrypt_message">Если установить пароль резервной копии, весь файл будет зашифрован — включая плейлисты, профили и сохранённые пароли — и без этого пароля прочитать его содержимое будет невозможно. Храните пароль в надёжном месте: если вы его потеряете, резервную копию нельзя будет открыть. Без пароля файл не шифруется, а сохранённые пароли и PIN-коды в него не включаются.</string>
     <string name="settings_backup_export_title">Экспорт резервной копии</string>
     <string name="settings_backup_export_message">Отправьте резервную копию на другое устройство (телефон или ноутбук) в той же сети Wi-Fi либо сохраните её в файл на этом устройстве.</string>
     <string name="settings_backup_restore_title">Восстановление резервной копии</string>
@@ -702,7 +752,7 @@
     <string name="settings_backup_section_settings">Настройки приложения</string>
     <string name="settings_backup_section_settings_desc">Настройки темы, акцентного цвета, плеера и компоновки</string>
     <string name="settings_backup_saved_to">Сохранено в <xliff:g id="path">%1$s</xliff:g>.</string>
-    <string name="settings_backup_saved_to_without_passwords">Сохранено в <xliff:g id="path">%1$s</xliff:g>. Пароли не включены.</string>
+    <string name="settings_backup_saved_to_without_passwords">Сохранено в <xliff:g id="path">%1$s</xliff:g>. Пароли и PIN-коды не включены.</string>
     <plurals name="settings_backup_restored">
         <item quantity="one">Восстановлен <xliff:g id="items">%1$d</xliff:g> элемент.</item>
         <item quantity="few">Восстановлено <xliff:g id="items">%1$d</xliff:g> элемента.</item>
@@ -710,7 +760,7 @@
         <item quantity="other">Восстановлено <xliff:g id="items">%1$d</xliff:g> элемента.</item>
     </plurals>
     <string name="settings_backup_restore_resync">Повторно синхронизируйте источники, чтобы загрузить контент.</string>
-    <string name="settings_backup_restore_password_note">Повторно введите сохранённые пароли в разделе «Источники/Прокси».</string>
+    <string name="settings_backup_restore_password_note">Повторно введите сохранённые пароли в разделе «Источники/Прокси», а также PIN-коды профилей.</string>
     <plurals name="settings_backup_skipped_sources">
         <item quantity="one">Пропущен <xliff:g id="count">%1$d</xliff:g> источник, поскольку тип его плейлиста не поддерживается.</item>
         <item quantity="few">Пропущено <xliff:g id="count">%1$d</xliff:g> источника, поскольку типы их плейлистов не поддерживаются.</item>
@@ -943,6 +993,8 @@
     <string name="settings_font_preview">Развлечения — это просто.</string>
     <string name="settings_search_keywords_fonts">шрифт текст размер типографика окно чтение доступность</string>
     <string name="settings_font_system_sans">Системный шрифт без засечек</string>
+    <string name="settings_font_monospace">Моноширинный</string>
+    <string name="settings_subtitle_font">Шрифт субтитров</string>
     <string name="settings_glass_preset_title">Предустановка оформления</string>
     <string name="settings_glass_preset_clear">Прозрачное</string>
     <string name="settings_glass_preset_balanced">Сбалансированное</string>

@@ -94,12 +94,25 @@
     <string name="settings_metadata_provider_tmdb_description">Oplysningerne fra din afspilningsliste har førsteprioritet. TMDB udfylder manglerne og tilføjer medvirkende, genrer og baggrundsbilleder.</string>
     <string name="settings_metadata_tmdb_only_description">Foretræk TMDB for alle felter. Brug kun din afspilningsliste som reserve, når TMDB ikke har nogen oplysninger.</string>
     <string name="settings_selected">Valgt</string>
-    <string name="settings_active_tmdb_source">Aktiv TMDB-kilde: <xliff:g id="tier">%1$s</xliff:g></string>
+    <string name="settings_metadata_allowance">Din daglige andel</string>
+    <string name="settings_metadata_usage_label">Forbrug</string>
+    <string name="settings_metadata_usage_value"><xliff:g id="min_used">%1$d</xliff:g>/<xliff:g id="min_total">%2$d</xliff:g> min · <xliff:g id="hr_used">%3$d</xliff:g>/<xliff:g id="hr_total">%4$d</xliff:g> time · <xliff:g id="day_used">%5$d</xliff:g>/<xliff:g id="day_total">%6$d</xliff:g> dag</string>
+    <string name="settings_metadata_source_label">Kilde</string>
+    <string name="settings_metadata_key_label">Nøgle</string>
+    <string name="settings_metadata_server_label">Server</string>
+    <string name="settings_metadata_refills_label">Fyldes op kl.</string>
+    <string name="settings_metadata_clear_advanced_title">Vil du holde op med at bruge din egen nøgle?</string>
+    <string name="settings_metadata_clear_advanced_message">Din TMDB API-nøgle og adressen på din egen server slettes fra denne enhed, og OwnTV vender tilbage til den indbyggede fælles tjeneste med dens daglige andel.</string>
+    <string name="settings_metadata_fair_share">Den indbyggede metadatatjeneste deles af alle, der bruger OwnTV, så hver enhed får sin egen andel hver dag. Hvis du bruger din andel op, sættes plakater og beskrivelser på pause, indtil den fyldes op igen — oplysningerne fra din egen playliste fungerer som normalt. At tilføje din egen TMDB API-nøgle eller server fjerner grænsen: det er gratis, og en personlig nøgle har praktisk talt ingen grænse.</string>
+    <string name="settings_metadata_limit_reached">Din daglige metadataandel er brugt op — tilføj din egen TMDB-nøgle under Indstillinger → Metadata for at fjerne denne grænse.</string>
     <string name="settings_metadata_language">Metadatasprog</string>
-    <string name="settings_metadata_language_description">Sprog for handlingsbeskrivelser, genrer og titler fra TMDB. Felter, som TMDB ikke har oversat, forbliver på engelsk. Når dette ændres, ryddes de cachelagrede oplysninger, så de hentes igen.</string>
+    <string name="settings_metadata_language_description">Sprog for handling, genrer og titler fra TMDB. Felter, som TMDB ikke har oversat, forbliver på engelsk. Detaljer caches pr. sprog, så det er øjeblikkeligt at skifte tilbage.</string>
     <string name="settings_advanced_options">Avancerede indstillinger</string>
     <string name="settings_advanced_metadata_description">Brug din egen TMDB API-nøgle eller en server med egen hosting i stedet for den fælles standard.</string>
     <string name="settings_metadata_server_description">Lad begge felter stå tomme for at bruge den indbyggede fællesserver (ingen opsætning). Angiv din egen TMDB API-nøgle for at kalde TMDB direkte eller URL\'en til en server med egen hosting for at bruge din egen proxy eller dit eget spejl. En URL har prioritet over en nøgle.</string>
+    <string name="settings_metadata_key_from_phone">Hent nøglen fra din telefon</string>
+    <string name="settings_metadata_key_from_phone_desc">Scan en kode med telefonen, log ind på TMDB der, og send nøglen over. Intet at taste på fjernbetjeningen.</string>
+    <string name="settings_metadata_key_received">TMDB-nøgle modtaget fra din telefon</string>
     <string name="settings_tmdb_api_key">TMDB API-nøgle (v3)</string>
     <string name="settings_self_host_url">URL til server med egen hosting</string>
     <string name="settings_test">Test</string>
@@ -351,11 +364,47 @@
     <string name="settings_decoding">Afkodning</string>
     <string name="settings_hardware_decoding">Hardwareafkodning</string>
     <string name="settings_hardware_decoding_description">Brug tv\'ets hardwaredekoder. Slå dette fra, hvis nogle streams hakker eller viser billedfejl.</string>
+    <!-- Translators: Setting label for deinterlacing of interlaced broadcast video. -->
+    <string name="settings_deinterlace">Deinterlacing</string>
+    <!-- Translators: Description of the deinterlacing setting. -->
+    <string name="settings_deinterlace_description">Udjævner de kamlignende linjer, som nogle gamle SD-kanaler viser ved bevægelse. Gælder mpv-motoren, mens den selv tegner billedet, så slå hardwareafkodning fra, hvis det ikke gør nogen forskel.</string>
     <string name="settings_movies_series_player">Afspiller til film og serier</string>
+    <string name="settings_live_tv_player">Afspiller til live-tv</string>
+    <string name="settings_engine_order"><xliff:g id="first">%1$s</xliff:g>, derefter <xliff:g id="second">%2$s</xliff:g></string>
+    <string name="settings_engine_only">Kun <xliff:g id="engine">%1$s</xliff:g></string>
+    <string name="settings_engine_default"><xliff:g id="option">%1$s</xliff:g> (standard)</string>
     <string name="settings_reset_player_choices">Nulstil gemte afspillervalg</string>
     <string name="settings_external_player">Ekstern afspiller</string>
     <string name="settings_default_zoom">Standardzoom</string>
     <string name="settings_default_zoom_description">Billedformat/zoom, der anvendes, når afspilningen starter.</string>
+    <!-- Translators: Setting label for the volume level playback starts at. -->
+    <string name="settings_default_volume">Standardlydstyrke</string>
+    <!-- Translators: Description of the default volume setting. -->
+    <string name="settings_default_volume_description">Lydstyrke, der anvendes, når afspilningen starter. Over 100 %% forstærkes lavtlydende streams.</string>
+    <!-- Translators: Settings-row title for forgetting the zoom saved for individual items. -->
+    <string name="settings_reset_saved_zoom">Nulstil gemt zoom</string>
+    <!-- Translators: Description of the reset-saved-zoom setting row. -->
+    <string name="settings_reset_saved_zoom_description">Når du ændrer zoom i afspilleren, gemmes det for den kanal, film eller episode. Nulstilling får alt til at følge standardzoom igen.</string>
+    <!-- Translators: Confirmation dialog title before forgetting the saved per-item zoom. -->
+    <string name="settings_reset_saved_zoom_confirm">Nulstil gemt zoom?</string>
+    <!-- Translators: Confirmation dialog body before forgetting the saved per-item zoom. -->
+    <string name="settings_reset_saved_zoom_confirm_description">Alle kanaler, film og episoder vender tilbage til standardzoom. Gemte lydstyrker bevares. Du kan altid indstille en enkelt af dem igen fra afspilleren.</string>
+    <!-- Translators: Settings-row title for forgetting the volume saved for individual items. -->
+    <string name="settings_reset_saved_volume">Nulstil gemt lydstyrke</string>
+    <!-- Translators: Description of the reset-saved-volume setting row. -->
+    <string name="settings_reset_saved_volume_description">Når du ændrer lydstyrken i afspilleren, gemmes den for den kanal, film eller episode. Nulstilling får alt til at følge standardlydstyrken igen.</string>
+    <!-- Translators: Confirmation dialog title before forgetting the saved per-item volume. -->
+    <string name="settings_reset_saved_volume_confirm">Nulstil gemt lydstyrke?</string>
+    <!-- Translators: Confirmation dialog body before forgetting the saved per-item volume. -->
+    <string name="settings_reset_saved_volume_confirm_description">Alle kanaler, film og episoder vender tilbage til standardlydstyrken. Gemte zoomindstillinger bevares. Du kan altid indstille en enkelt af dem igen fra afspilleren.</string>
+    <!-- Translators: Setting label for how far rewind/forward jumps in a movie or episode. -->
+    <string name="settings_seek_step">Spolingstrin</string>
+    <!-- Translators: Description of the seek step setting. -->
+    <string name="settings_seek_step_description">Hvor langt spol tilbage og frem springer i en film eller episode.</string>
+    <!-- Translators: Setting label for how far rewind/forward jumps inside a live channel's archive. -->
+    <string name="settings_live_rewind_step">Live-spolingstrin</string>
+    <!-- Translators: Description of the live rewind step setting. -->
+    <string name="settings_live_rewind_step_description">Hvor langt spol tilbage og frem flytter sig i en live-kanals catch-up-arkiv.</string>
     <string name="settings_resume_playback">Fortsæt afspilningen</string>
     <string name="settings_resume_playback_description">Hvad der skal ske, når en film eller et afsnit har en gemt position.</string>
     <string name="settings_subtitles">Undertekster</string>
@@ -370,7 +419,7 @@
     <string name="settings_audio">Lyd</string>
     <string name="settings_preferred_audio_language">Foretrukket lydsprog</string>
     <string name="settings_audio_sync">Lydsynkronisering</string>
-    <string name="settings_audio_sync_description">Forskyd lyden frem eller tilbage, så den passer til videoen.</string>
+    <string name="settings_audio_sync_description">Forskyd lyden frem eller tilbage, så den passer til videoen. Gælder kun for mpv-motoren.</string>
     <string name="settings_live_tv">Live-tv</string>
     <string name="settings_live_latency_description">Hvor tæt på liveudsendelsen der skal afspilles. En lavere værdi betyder tættere på live, men en mindre buffer, så svage streams kan hakke eller genoprette forbindelsen oftere. Gælder for den næste kanal, du åbner.</string>
     <string name="settings_channel_numbers">Kanalnumre</string>
@@ -398,7 +447,8 @@
     <string name="settings_audio_delay"><xliff:g id="delay">%1$d</xliff:g> ms</string>
     <string name="settings_external_player_description">Vælg, hvilke sektioner der skal åbnes i en ekstern app.</string>
     <string name="settings_audio_delay_value"><xliff:g id="delay">%1$d</xliff:g> ms</string>
-    <string name="settings_movies_player_description">mpv (anbefales) understøtter flest formater — DTS/TrueHD-lyd og usædvanlige filer — og har desuden en løsning til A/V-synkronisering. Skift kun til ExoPlayer, hvis film eller afsnit ikke kan starte: Den kan afspille visse streams, som mpv ikke kan på bestemte tv\'er, men kan ikke afkode DTS/TrueHD-lyd og har ingen løsning til A/V-synkronisering. Uanset hvad du vælger, prøves den anden automatisk, hvis den valgte ikke virker.</string>
+    <string name="settings_movies_player_description">mpv (anbefales) har den bredeste formatunderstøttelse — DTS/TrueHD-lyd, usædvanlige filer — plus rettelsen af A/V-synkronisering. ExoPlayer afspiller på visse tv streams, som mpv ikke kan, men den kan ikke afkode DTS/TrueHD-lyd og har ingen A/V-synkroniseringsrettelse. De kombinerede valg prøver automatisk den anden afspiller, når den første fejler; valgene med kun én afspiller gør det aldrig, hvilket sparer et par sekunders sort skærm, hvis den anden afspiller alligevel ikke virker på dit tv.</string>
+    <string name="settings_live_player_description">ExoPlayer (anbefales) åbner kanaler meget hurtigere og er den eneste med undertekster i live-tv. mpv afspiller kanaler, ExoPlayer ikke kan, heriblandt nogle med usædvanlig lyd. De kombinerede valg prøver automatisk den anden afspiller, når den første fejler; valgene med kun én afspiller gør det aldrig, hvilket sparer et par sekunders sort skærm, hvis den anden afspiller alligevel ikke virker på dit tv. En kanal, du skifter manuelt i afspilleren, beholder dit valg under alle omstændigheder.</string>
     <string name="settings_reset_player_choices_description">Når du i afspilleren skifter en enkelt film eller episode mellem mpv og ExoPlayer, gemmes det valg til næste gang. Nulstilling får alt til at følge indstillingen ovenfor igen. Gemte valg for live-kanaler bevares.</string>
     <string name="settings_reset_player_choices_none">Ingen gemt</string>
     <plurals name="settings_reset_player_choices_count">
@@ -637,7 +687,7 @@
     <string name="settings_backup_what_backup">Hvad der skal sikkerhedskopieres</string>
     <string name="settings_backup_what_restore">Hvad der skal gendannes</string>
     <string name="settings_backup_encrypt_title">Kryptér denne sikkerhedskopi?</string>
-    <string name="settings_backup_encrypt_message">Med en adgangskode til sikkerhedskopien krypteres hele filen — inklusive afspilningslister, profiler og gemte adgangskoder — og intet i den kan læses uden denne adgangskode. Opbevar den sikkert: Hvis du mister den, kan sikkerhedskopien slet ikke åbnes. Uden en adgangskode krypteres filen ikke, og gemte adgangskoder udelades.</string>
+    <string name="settings_backup_encrypt_message">Med en adgangskode til sikkerhedskopien krypteres hele filen — inklusive afspilningslister, profiler og gemte adgangskoder — og intet i den kan læses uden denne adgangskode. Opbevar den sikkert: Hvis du mister den, kan sikkerhedskopien slet ikke åbnes. Uden en adgangskode krypteres filen ikke, og gemte adgangskoder og PIN-koder udelades.</string>
     <string name="settings_backup_export_title">Eksportér en sikkerhedskopi</string>
     <string name="settings_backup_export_message">Send sikkerhedskopien til en anden enhed (telefon eller bærbar computer) på samme Wi-Fi, eller gem den som en fil på denne enhed.</string>
     <string name="settings_backup_restore_title">Gendan en sikkerhedskopi</string>
@@ -686,13 +736,13 @@
     <string name="settings_backup_section_settings">Appindstillinger</string>
     <string name="settings_backup_section_settings_desc">Indstillinger for tema, accentfarve, afspiller og layout</string>
     <string name="settings_backup_saved_to">Gemt i <xliff:g id="path">%1$s</xliff:g>.</string>
-    <string name="settings_backup_saved_to_without_passwords">Gemt i <xliff:g id="path">%1$s</xliff:g>. Adgangskoder blev ikke medtaget.</string>
+    <string name="settings_backup_saved_to_without_passwords">Gemt i <xliff:g id="path">%1$s</xliff:g>. Adgangskoder og PIN-koder blev ikke medtaget.</string>
     <plurals name="settings_backup_restored">
         <item quantity="one"><xliff:g id="items">%1$d</xliff:g> element gendannet.</item>
         <item quantity="other"><xliff:g id="items">%1$d</xliff:g> elementer gendannet.</item>
     </plurals>
     <string name="settings_backup_restore_resync">Synkroniser dine kilder igen for at indlæse indhold.</string>
-    <string name="settings_backup_restore_password_note">Indtast eventuelle gemte adgangskoder igen under Kilder/Proxy.</string>
+    <string name="settings_backup_restore_password_note">Indtast eventuelle gemte adgangskoder og profil-PIN-koder igen under Kilder/Proxy.</string>
     <plurals name="settings_backup_skipped_sources">
         <item quantity="one"><xliff:g id="count">%1$d</xliff:g> kilde blev sprunget over, fordi dens type afspilningsliste ikke understøttes.</item>
         <item quantity="other"><xliff:g id="count">%1$d</xliff:g> kilder blev sprunget over, fordi deres typer afspilningslister ikke understøttes.</item>
@@ -909,6 +959,8 @@
     <string name="settings_font_preview">Underholdning gjort enkelt.</string>
     <string name="settings_search_keywords_fonts">skrifttype tekst størrelse typografi popup læsning tilgængelighed</string>
     <string name="settings_font_system_sans">System Sans</string>
+    <string name="settings_font_monospace">Fast bredde</string>
+    <string name="settings_subtitle_font">Undertekstskrifttype</string>
     <string name="settings_glass_preset_title">Udseendeprofil</string>
     <string name="settings_glass_preset_clear">Klar</string>
     <string name="settings_glass_preset_balanced">Balanceret</string>

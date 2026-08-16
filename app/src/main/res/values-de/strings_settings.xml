@@ -94,12 +94,25 @@
     <string name="settings_metadata_provider_tmdb_description">Die Angaben Ihrer Wiedergabeliste haben Vorrang; TMDB füllt Lücken und ergänzt Besetzung, Genres und Hintergrundbilder.</string>
     <string name="settings_metadata_tmdb_only_description">TMDB für jedes Feld bevorzugen; nur auf Ihre Wiedergabeliste zurückgreifen, wenn TMDB keine Angaben enthält.</string>
     <string name="settings_selected">Ausgewählt</string>
-    <string name="settings_active_tmdb_source">Aktive TMDB-Quelle: <xliff:g id="tier">%1$s</xliff:g></string>
+    <string name="settings_metadata_allowance">Ihr Tagesanteil</string>
+    <string name="settings_metadata_usage_label">Nutzung</string>
+    <string name="settings_metadata_usage_value"><xliff:g id="min_used">%1$d</xliff:g>/<xliff:g id="min_total">%2$d</xliff:g> Min. · <xliff:g id="hr_used">%3$d</xliff:g>/<xliff:g id="hr_total">%4$d</xliff:g> Std. · <xliff:g id="day_used">%5$d</xliff:g>/<xliff:g id="day_total">%6$d</xliff:g> Tag</string>
+    <string name="settings_metadata_source_label">Quelle</string>
+    <string name="settings_metadata_key_label">Schlüssel</string>
+    <string name="settings_metadata_server_label">Server</string>
+    <string name="settings_metadata_refills_label">Auffüllung um</string>
+    <string name="settings_metadata_clear_advanced_title">Eigenen Schlüssel nicht mehr verwenden?</string>
+    <string name="settings_metadata_clear_advanced_message">Ihr TMDB-API-Schlüssel und die Adresse Ihres eigenen Servers werden von diesem Gerät gelöscht, und OwnTV kehrt zum integrierten gemeinsamen Dienst mit seinem Tagesanteil zurück.</string>
+    <string name="settings_metadata_fair_share">Der integrierte Metadatendienst wird von allen OwnTV-Nutzern gemeinsam genutzt, daher erhält jedes Gerät täglich seinen eigenen Anteil. Wenn Ihr Anteil aufgebraucht ist, pausieren Poster und Beschreibungen, bis er wieder aufgefüllt wird — die Informationen aus Ihrer eigenen Playlist funktionieren weiterhin normal. Ein eigener TMDB-API-Schlüssel oder Server hebt diese Beschränkung auf: Er ist kostenlos, und ein persönlicher Schlüssel hat praktisch kein Limit.</string>
+    <string name="settings_metadata_limit_reached">Tagesanteil an Metadaten aufgebraucht — fügen Sie unter Einstellungen → Metadaten Ihren eigenen TMDB-Schlüssel hinzu, um diese Beschränkung aufzuheben.</string>
     <string name="settings_metadata_language">Metadatensprache</string>
-    <string name="settings_metadata_language_description">Sprache für Handlungen, Genres und Titel von TMDB. Felder, die TMDB nicht übersetzt hat, bleiben auf Englisch. Bei einer Änderung werden die zwischengespeicherten Details gelöscht und erneut abgerufen.</string>
+    <string name="settings_metadata_language_description">Sprache für Handlungen, Genres und Titel von TMDB. Felder, die TMDB nicht übersetzt hat, bleiben auf Englisch. Details werden pro Sprache zwischengespeichert, das Zurückwechseln erfolgt daher sofort.</string>
     <string name="settings_advanced_options">Erweiterte Optionen</string>
     <string name="settings_advanced_metadata_description">Verwenden Sie anstelle der gemeinsamen Standardkonfiguration Ihren eigenen TMDB-API-Schlüssel oder einen selbst gehosteten Server.</string>
     <string name="settings_metadata_server_description">Lassen Sie beide Felder leer, um den integrierten gemeinsamen Server zu verwenden (keine Einrichtung erforderlich). Geben Sie Ihren eigenen TMDB-API-Schlüssel ein, um TMDB direkt aufzurufen, oder die URL eines selbst gehosteten Servers, um Ihren eigenen Proxy/Spiegelserver zu verwenden. Eine URL hat Vorrang vor einem Schlüssel.</string>
+    <string name="settings_metadata_key_from_phone">Schlüssel vom Telefon holen</string>
+    <string name="settings_metadata_key_from_phone_desc">Scannen Sie einen Code mit Ihrem Telefon, melden Sie sich dort bei TMDB an und senden Sie den Schlüssel herüber. Nichts auf der Fernbedienung zu tippen.</string>
+    <string name="settings_metadata_key_received">TMDB-Schlüssel vom Telefon empfangen</string>
     <string name="settings_tmdb_api_key">TMDB-API-Schlüssel (v3)</string>
     <string name="settings_self_host_url">URL des selbst gehosteten Servers</string>
     <string name="settings_test">Test</string>
@@ -351,11 +364,47 @@
     <string name="settings_decoding">Decodierung</string>
     <string name="settings_hardware_decoding">Hardwaredecodierung</string>
     <string name="settings_hardware_decoding_description">Den Hardwaredecoder des Fernsehers verwenden. Deaktivieren Sie diese Option, wenn einige Streams ruckeln oder Bildfehler zeigen.</string>
+    <!-- Translators: Setting label for deinterlacing of interlaced broadcast video. -->
+    <string name="settings_deinterlace">Deinterlacing</string>
+    <!-- Translators: Description of the deinterlacing setting. -->
+    <string name="settings_deinterlace_description">Glättet die kammartigen Linien, die manche alten SD-Sender bei Bewegung zeigen. Gilt für die mpv-Engine, solange sie das Bild selbst zeichnet — ändert sich nichts, schalte die Hardware-Dekodierung aus.</string>
     <string name="settings_movies_series_player">Player für Filme und Serien</string>
+    <string name="settings_live_tv_player">Player für Live-TV</string>
+    <string name="settings_engine_order"><xliff:g id="first">%1$s</xliff:g>, dann <xliff:g id="second">%2$s</xliff:g></string>
+    <string name="settings_engine_only">Nur <xliff:g id="engine">%1$s</xliff:g></string>
+    <string name="settings_engine_default"><xliff:g id="option">%1$s</xliff:g> (Standard)</string>
     <string name="settings_reset_player_choices">Gespeicherte Player-Auswahl zurücksetzen</string>
     <string name="settings_external_player">Externer Player</string>
     <string name="settings_default_zoom">Standardzoom</string>
     <string name="settings_default_zoom_description">Seitenverhältnis/Zoom, das bzw. der beim Start der Wiedergabe angewendet wird.</string>
+    <!-- Translators: Setting label for the volume level playback starts at. -->
+    <string name="settings_default_volume">Standardlautstärke</string>
+    <!-- Translators: Description of the default volume setting. -->
+    <string name="settings_default_volume_description">Lautstärke, die beim Start der Wiedergabe angewendet wird. Über 100 %% werden leise Streams verstärkt.</string>
+    <!-- Translators: Settings-row title for forgetting the zoom saved for individual items. -->
+    <string name="settings_reset_saved_zoom">Gespeicherten Zoom zurücksetzen</string>
+    <!-- Translators: Description of the reset-saved-zoom setting row. -->
+    <string name="settings_reset_saved_zoom_description">Wenn du den Zoom im Player änderst, wird er für diesen Kanal, Film oder diese Folge gespeichert. Beim Zurücksetzen folgt wieder alles dem Standardzoom.</string>
+    <!-- Translators: Confirmation dialog title before forgetting the saved per-item zoom. -->
+    <string name="settings_reset_saved_zoom_confirm">Gespeicherten Zoom zurücksetzen?</string>
+    <!-- Translators: Confirmation dialog body before forgetting the saved per-item zoom. -->
+    <string name="settings_reset_saved_zoom_confirm_description">Jeder Kanal, jeder Film und jede Folge kehrt zum Standardzoom zurück. Gespeicherte Lautstärken bleiben erhalten. Du kannst einzelne Titel jederzeit erneut im Player einstellen.</string>
+    <!-- Translators: Settings-row title for forgetting the volume saved for individual items. -->
+    <string name="settings_reset_saved_volume">Gespeicherte Lautstärke zurücksetzen</string>
+    <!-- Translators: Description of the reset-saved-volume setting row. -->
+    <string name="settings_reset_saved_volume_description">Wenn du die Lautstärke im Player änderst, wird sie für diesen Kanal, Film oder diese Folge gespeichert. Beim Zurücksetzen folgt wieder alles der Standardlautstärke.</string>
+    <!-- Translators: Confirmation dialog title before forgetting the saved per-item volume. -->
+    <string name="settings_reset_saved_volume_confirm">Gespeicherte Lautstärke zurücksetzen?</string>
+    <!-- Translators: Confirmation dialog body before forgetting the saved per-item volume. -->
+    <string name="settings_reset_saved_volume_confirm_description">Jeder Kanal, jeder Film und jede Folge kehrt zur Standardlautstärke zurück. Gespeicherte Zoom-Einstellungen bleiben erhalten. Du kannst einzelne Titel jederzeit erneut im Player einstellen.</string>
+    <!-- Translators: Setting label for how far rewind/forward jumps in a movie or episode. -->
+    <string name="settings_seek_step">Sprungweite</string>
+    <!-- Translators: Description of the seek step setting. -->
+    <string name="settings_seek_step_description">Wie weit Rück- und Vorlauf in einem Film oder einer Folge springen.</string>
+    <!-- Translators: Setting label for how far rewind/forward jumps inside a live channel's archive. -->
+    <string name="settings_live_rewind_step">Live-Rücklaufschritt</string>
+    <!-- Translators: Description of the live rewind step setting. -->
+    <string name="settings_live_rewind_step_description">Wie weit sich Rück- und Vorlauf im Catch-up-Archiv eines Live-Kanals bewegen.</string>
     <string name="settings_resume_playback">Wiedergabe fortsetzen</string>
     <string name="settings_resume_playback_description">Legt fest, was geschieht, wenn für einen Film oder eine Folge eine Position gespeichert ist.</string>
     <string name="settings_subtitles">Untertitel</string>
@@ -370,7 +419,7 @@
     <string name="settings_audio">Audio</string>
     <string name="settings_preferred_audio_language">Bevorzugte Audiosprache</string>
     <string name="settings_audio_sync">Audio-Synchronisierung</string>
-    <string name="settings_audio_sync_description">Audio zeitlich vor- oder zurückversetzen, um es an das Video anzupassen.</string>
+    <string name="settings_audio_sync_description">Audio zeitlich vor- oder zurückversetzen, um es an das Video anzupassen. Gilt nur für die mpv-Engine.</string>
     <string name="settings_live_tv">Live-TV</string>
     <string name="settings_live_latency_description">Legt fest, wie nah an der Live-Übertragung die Wiedergabe erfolgt. Ein niedrigerer Wert bedeutet eine geringere Verzögerung zur Live-Übertragung, aber auch einen kleineren Puffer, sodass schwache Streams häufiger stocken oder die Verbindung erneut herstellen können. Gilt für den nächsten Sender, den du öffnest.</string>
     <string name="settings_channel_numbers">Sendernummern</string>
@@ -398,7 +447,8 @@
     <string name="settings_audio_delay"><xliff:g id="delay">%1$d</xliff:g> ms</string>
     <string name="settings_external_player_description">Auswählen, welche Bereiche in einer externen App geöffnet werden.</string>
     <string name="settings_audio_delay_value"><xliff:g id="delay">%1$d</xliff:g> ms</string>
-    <string name="settings_movies_player_description">mpv (empfohlen) bietet die umfassendste Formatunterstützung – DTS/TrueHD-Audio, ungewöhnliche Dateien – sowie die Korrektur der A/V-Synchronisierung. Wechsle nur zu ExoPlayer, wenn Filme oder Folgen nicht starten: Auf bestimmten Fernsehern kann er einige Streams wiedergeben, die mpv nicht wiedergeben kann, er kann jedoch kein DTS/TrueHD-Audio decodieren und bietet keine Korrektur der A/V-Synchronisierung. Unabhängig von deiner Auswahl wird bei einem Fehler automatisch der jeweils andere Player ausprobiert.</string>
+    <string name="settings_movies_player_description">mpv (empfohlen) bietet die umfassendste Formatunterstützung — DTS/TrueHD-Audio, ungewöhnliche Dateien — sowie die Korrektur der A/V-Synchronisierung. ExoPlayer gibt auf bestimmten Fernsehern einige Streams wieder, die mpv nicht schafft, kann jedoch kein DTS/TrueHD-Audio decodieren und bietet keine A/V-Korrektur. Die kombinierten Optionen probieren automatisch den anderen Player, wenn der erste scheitert; die Optionen mit nur einem Player tun das nie, was ein paar Sekunden Schwarzbild spart, falls der zweite Player auf deinem Fernseher ohnehin nicht funktioniert.</string>
+    <string name="settings_live_player_description">ExoPlayer (empfohlen) öffnet Sender deutlich schneller und ist der einzige mit Untertiteln im Live-TV. mpv gibt Sender wieder, die ExoPlayer nicht schafft, darunter manche mit ungewöhnlichem Ton. Die kombinierten Optionen probieren automatisch den anderen Player, wenn der erste scheitert; die Optionen mit nur einem Player tun das nie, was ein paar Sekunden Schwarzbild spart, falls der zweite Player auf deinem Fernseher ohnehin nicht funktioniert. Bei einem Sender, den du im Player von Hand umschaltest, bleibt deine Auswahl in beiden Fällen erhalten.</string>
     <string name="settings_reset_player_choices_description">Wenn du einen einzelnen Film oder eine Folge im Player zwischen mpv und ExoPlayer umschaltest, wird diese Auswahl für das nächste Mal gespeichert. Beim Zurücksetzen folgt wieder alles der Einstellung oben. Gespeicherte Auswahlen für Live-Kanäle bleiben erhalten.</string>
     <string name="settings_reset_player_choices_none">Nichts gespeichert</string>
     <plurals name="settings_reset_player_choices_count">
@@ -637,7 +687,7 @@
     <string name="settings_backup_what_backup">Zu sichernde Inhalte</string>
     <string name="settings_backup_what_restore">Wiederherzustellende Inhalte</string>
     <string name="settings_backup_encrypt_title">Diese Sicherung verschlüsseln?</string>
-    <string name="settings_backup_encrypt_message">Mit einem Sicherungskennwort wird die gesamte Datei verschlüsselt – einschließlich Wiedergabelisten, Profilen und gespeicherten Kennwörtern – und ohne dieses Kennwort kann nichts darin gelesen werden. Bewahre es sicher auf: Wenn du es verlierst, kann die Sicherung überhaupt nicht mehr geöffnet werden. Ohne Kennwort wird die Datei nicht verschlüsselt, und gespeicherte Kennwörter werden nicht aufgenommen.</string>
+    <string name="settings_backup_encrypt_message">Mit einem Sicherungskennwort wird die gesamte Datei verschlüsselt – einschließlich Wiedergabelisten, Profilen und gespeicherten Kennwörtern – und ohne dieses Kennwort kann nichts darin gelesen werden. Bewahre es sicher auf: Wenn du es verlierst, kann die Sicherung überhaupt nicht mehr geöffnet werden. Ohne Kennwort wird die Datei nicht verschlüsselt, und gespeicherte Kennwörter und PINs werden nicht aufgenommen.</string>
     <string name="settings_backup_export_title">Sicherung exportieren</string>
     <string name="settings_backup_export_message">Sende die Sicherung an ein anderes Gerät (Smartphone oder Laptop) im selben Wi-Fi oder speichere sie als Datei auf diesem Gerät.</string>
     <string name="settings_backup_restore_title">Sicherung wiederherstellen</string>
@@ -686,13 +736,13 @@
     <string name="settings_backup_section_settings">App-Einstellungen</string>
     <string name="settings_backup_section_settings_desc">Einstellungen für Design, Akzentfarbe, Player und Layout</string>
     <string name="settings_backup_saved_to">Unter <xliff:g id="path">%1$s</xliff:g> gespeichert.</string>
-    <string name="settings_backup_saved_to_without_passwords">Unter <xliff:g id="path">%1$s</xliff:g> gespeichert. Kennwörter wurden nicht aufgenommen.</string>
+    <string name="settings_backup_saved_to_without_passwords">Unter <xliff:g id="path">%1$s</xliff:g> gespeichert. Kennwörter und PINs wurden nicht aufgenommen.</string>
     <plurals name="settings_backup_restored">
         <item quantity="one"><xliff:g id="items">%1$d</xliff:g> Element wiederhergestellt.</item>
         <item quantity="other"><xliff:g id="items">%1$d</xliff:g> Elemente wiederhergestellt.</item>
     </plurals>
     <string name="settings_backup_restore_resync">Synchronisiere deine Quellen erneut, um Inhalte zu laden.</string>
-    <string name="settings_backup_restore_password_note">Gib alle gespeicherten Kennwörter unter „Quellen/Proxy“ erneut ein.</string>
+    <string name="settings_backup_restore_password_note">Gib alle gespeicherten Kennwörter unter „Quellen/Proxy“ und alle Profil-PINs erneut ein.</string>
     <plurals name="settings_backup_skipped_sources">
         <item quantity="one"><xliff:g id="count">%1$d</xliff:g> Quelle wurde übersprungen, weil ihr Wiedergabelistentyp nicht unterstützt wird.</item>
         <item quantity="other"><xliff:g id="count">%1$d</xliff:g> Quellen wurden übersprungen, weil ihre Wiedergabelistentypen nicht unterstützt werden.</item>
@@ -909,6 +959,8 @@
     <string name="settings_font_preview">Unterhaltung, ganz einfach.</string>
     <string name="settings_search_keywords_fonts">Schrift Text Größe Typografie Popup Lesen Barrierefreiheit</string>
     <string name="settings_font_system_sans">System Sans</string>
+    <string name="settings_font_monospace">Nichtproportional</string>
+    <string name="settings_subtitle_font">Untertitelschrift</string>
     <string name="settings_glass_preset_title">Darstellungsvoreinstellung</string>
     <string name="settings_glass_preset_clear">Klar</string>
     <string name="settings_glass_preset_balanced">Ausgewogen</string>

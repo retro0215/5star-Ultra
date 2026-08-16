@@ -94,12 +94,25 @@
     <string name="settings_metadata_provider_tmdb_description">আপনার প্লেলিস্টের তথ্য অগ্রাধিকার পাবে; TMDB ঘাটতি পূরণ করবে এবং অভিনয়শিল্পী, ধরন ও পটভূমির ছবি যোগ করবে।</string>
     <string name="settings_metadata_tmdb_only_description">প্রতিটি ক্ষেত্রের জন্য TMDB-কে অগ্রাধিকার দিন; TMDB-তে কিছু না থাকলেই শুধু প্লেলিস্টের তথ্য ব্যবহার করুন।</string>
     <string name="settings_selected">নির্বাচিত</string>
-    <string name="settings_active_tmdb_source">সক্রিয় TMDB উৎস: <xliff:g id="tier">%1$s</xliff:g></string>
+    <string name="settings_metadata_allowance">আপনার দৈনিক ভাগ</string>
+    <string name="settings_metadata_usage_label">ব্যবহার</string>
+    <string name="settings_metadata_usage_value"><xliff:g id="min_used">%1$d</xliff:g>/<xliff:g id="min_total">%2$d</xliff:g> মিনিট · <xliff:g id="hr_used">%3$d</xliff:g>/<xliff:g id="hr_total">%4$d</xliff:g> ঘণ্টা · <xliff:g id="day_used">%5$d</xliff:g>/<xliff:g id="day_total">%6$d</xliff:g> দিন</string>
+    <string name="settings_metadata_source_label">উৎস</string>
+    <string name="settings_metadata_key_label">কী</string>
+    <string name="settings_metadata_server_label">সার্ভার</string>
+    <string name="settings_metadata_refills_label">আবার ভরবে</string>
+    <string name="settings_metadata_clear_advanced_title">নিজের কী ব্যবহার বন্ধ করবেন?</string>
+    <string name="settings_metadata_clear_advanced_message">আপনার TMDB API কী এবং আপনার সার্ভারের ঠিকানা এই ডিভাইস থেকে মুছে ফেলা হবে, এবং OwnTV দৈনিক ভাগসহ অন্তর্নির্মিত শেয়ার্ড পরিষেবায় ফিরে যাবে।</string>
+    <string name="settings_metadata_fair_share">অন্তর্নির্মিত মেটাডেটা পরিষেবাটি OwnTV ব্যবহারকারী সবাই ভাগ করে নেন, তাই প্রতিটি ডিভাইস প্রতিদিন নিজের ভাগ পায়। ভাগ শেষ হয়ে গেলে পোস্টার ও বিবরণ আবার ভরা পর্যন্ত থেমে থাকে — আপনার নিজের প্লেলিস্টের তথ্য স্বাভাবিকভাবেই চলতে থাকে। নিজের TMDB API কী বা সার্ভার যোগ করলে এই সীমা উঠে যায়: এটি বিনামূল্যে, আর ব্যক্তিগত কী-তে কার্যত কোনো সীমা নেই।</string>
+    <string name="settings_metadata_limit_reached">আজকের মেটাডেটার ভাগ শেষ — এই সীমা তুলতে সেটিংস → মেটাডেটা-তে নিজের TMDB কী যোগ করুন।</string>
     <string name="settings_metadata_language">মেটাডেটার ভাষা</string>
-    <string name="settings_metadata_language_description">TMDB থেকে আসা কাহিনি, ধরন ও শিরোনামের ভাষা। TMDB যে ক্ষেত্রগুলো অনুবাদ করেনি, সেগুলো ইংরেজিতেই থাকবে। এটি পরিবর্তন করলে ক্যাশে রাখা বিস্তারিত তথ্য মুছে আবার আনা হবে।</string>
+    <string name="settings_metadata_language_description">TMDB থেকে আসা কাহিনি, ধরন ও শিরোনামের ভাষা। TMDB যেসব ক্ষেত্র অনুবাদ করেনি সেগুলি ইংরেজিতেই থাকবে। বিবরণ প্রতিটি ভাষার জন্য আলাদা ক্যাশ হয়, তাই ফিরে যাওয়া তাৎক্ষণিক।</string>
     <string name="settings_advanced_options">উন্নত বিকল্প</string>
     <string name="settings_advanced_metadata_description">শেয়ার করা ডিফল্টের বদলে নিজের TMDB API কী বা স্ব-হোস্ট করা সার্ভার ব্যবহার করুন।</string>
     <string name="settings_metadata_server_description">বিল্ট-ইন শেয়ার করা সার্ভার ব্যবহার করতে দুটিই ফাঁকা রাখুন (সেটআপের প্রয়োজন নেই)। সরাসরি TMDB-তে কল করতে নিজের TMDB API কী লিখুন, অথবা নিজের প্রক্সি/মিরর ব্যবহার করতে স্ব-হোস্ট করা সার্ভারের URL লিখুন। কী-এর চেয়ে URL অগ্রাধিকার পাবে।</string>
+    <string name="settings_metadata_key_from_phone">আপনার ফোন থেকে কী নিন</string>
+    <string name="settings_metadata_key_from_phone_desc">ফোন দিয়ে একটি কোড স্ক্যান করুন, সেখানে TMDB-তে সাইন ইন করুন এবং কী পাঠান। রিমোটে কিছু টাইপ করার নেই।</string>
+    <string name="settings_metadata_key_received">আপনার ফোন থেকে TMDB কী পাওয়া গেছে</string>
     <string name="settings_tmdb_api_key">TMDB API কী (v3)</string>
     <string name="settings_self_host_url">স্ব-হোস্ট করা সার্ভারের URL</string>
     <string name="settings_test">পরীক্ষা</string>
@@ -351,11 +364,47 @@
     <string name="settings_decoding">ডিকোডিং</string>
     <string name="settings_hardware_decoding">হার্ডওয়্যার ডিকোডিং</string>
     <string name="settings_hardware_decoding_description">TV-এর হার্ডওয়্যার ডিকোডার ব্যবহার করুন। কিছু স্ট্রিম আটকে গেলে বা বিকৃত ছবি দেখালে এটি বন্ধ করুন।</string>
+    <!-- Translators: Setting label for deinterlacing of interlaced broadcast video. -->
+    <string name="settings_deinterlace">ডিইন্টারলেসিং</string>
+    <!-- Translators: Description of the deinterlacing setting. -->
+    <string name="settings_deinterlace_description">কিছু পুরোনো SD চ্যানেলে নড়াচড়ার সময় দেখা চিরুনির মতো দাগ মসৃণ করে। mpv ইঞ্জিন নিজে ছবি আঁকার সময় এটি প্রযোজ্য, তাই কোনো পার্থক্য না হলে হার্ডওয়্যার ডিকোডিং বন্ধ করুন।</string>
     <string name="settings_movies_series_player">সিনেমা ও সিরিজের প্লেয়ার</string>
+    <string name="settings_live_tv_player">লাইভ টিভির প্লেয়ার</string>
+    <string name="settings_engine_order"><xliff:g id="first">%1$s</xliff:g>, তারপর <xliff:g id="second">%2$s</xliff:g></string>
+    <string name="settings_engine_only">শুধু <xliff:g id="engine">%1$s</xliff:g></string>
+    <string name="settings_engine_default"><xliff:g id="option">%1$s</xliff:g> (ডিফল্ট)</string>
     <string name="settings_reset_player_choices">সংরক্ষিত প্লেয়ার পছন্দ রিসেট করুন</string>
     <string name="settings_external_player">বাহ্যিক প্লেয়ার</string>
     <string name="settings_default_zoom">ডিফল্ট জুম</string>
     <string name="settings_default_zoom_description">প্লেব্যাক শুরু হলে প্রয়োগ করা অ্যাসপেক্ট/জুম।</string>
+    <!-- Translators: Setting label for the volume level playback starts at. -->
+    <string name="settings_default_volume">ডিফল্ট ভলিউম</string>
+    <!-- Translators: Description of the default volume setting. -->
+    <string name="settings_default_volume_description">প্লেব্যাক শুরু হলে প্রয়োগ করা ভলিউম। ১০০%%-এর উপরে কম শব্দের স্ট্রিম বাড়িয়ে দেওয়া হয়।</string>
+    <!-- Translators: Settings-row title for forgetting the zoom saved for individual items. -->
+    <string name="settings_reset_saved_zoom">সংরক্ষিত জুম রিসেট করুন</string>
+    <!-- Translators: Description of the reset-saved-zoom setting row. -->
+    <string name="settings_reset_saved_zoom_description">প্লেয়ারে জুম বদলালে তা সেই চ্যানেল, সিনেমা বা পর্বের জন্য সংরক্ষিত হয়। রিসেট করলে সবকিছু আবার ডিফল্ট জুম অনুসরণ করবে।</string>
+    <!-- Translators: Confirmation dialog title before forgetting the saved per-item zoom. -->
+    <string name="settings_reset_saved_zoom_confirm">সংরক্ষিত জুম রিসেট করবেন?</string>
+    <!-- Translators: Confirmation dialog body before forgetting the saved per-item zoom. -->
+    <string name="settings_reset_saved_zoom_confirm_description">প্রতিটি চ্যানেল, সিনেমা ও পর্ব আবার ডিফল্ট জুমে ফিরে যাবে। সংরক্ষিত ভলিউমগুলি অপরিবর্তিত থাকবে। প্লেয়ার থেকে যেকোনো সময় আলাদা একটি আইটেম আবার সেট করতে পারবেন।</string>
+    <!-- Translators: Settings-row title for forgetting the volume saved for individual items. -->
+    <string name="settings_reset_saved_volume">সংরক্ষিত ভলিউম রিসেট করুন</string>
+    <!-- Translators: Description of the reset-saved-volume setting row. -->
+    <string name="settings_reset_saved_volume_description">প্লেয়ারে ভলিউম বদলালে তা সেই চ্যানেল, সিনেমা বা পর্বের জন্য সংরক্ষিত হয়। রিসেট করলে সবকিছু আবার ডিফল্ট ভলিউম অনুসরণ করবে।</string>
+    <!-- Translators: Confirmation dialog title before forgetting the saved per-item volume. -->
+    <string name="settings_reset_saved_volume_confirm">সংরক্ষিত ভলিউম রিসেট করবেন?</string>
+    <!-- Translators: Confirmation dialog body before forgetting the saved per-item volume. -->
+    <string name="settings_reset_saved_volume_confirm_description">প্রতিটি চ্যানেল, সিনেমা ও পর্ব আবার ডিফল্ট ভলিউমে ফিরে যাবে। সংরক্ষিত জুম সেটিংগুলি অপরিবর্তিত থাকবে। প্লেয়ার থেকে যেকোনো সময় আলাদা একটি আইটেম আবার সেট করতে পারবেন।</string>
+    <!-- Translators: Setting label for how far rewind/forward jumps in a movie or episode. -->
+    <string name="settings_seek_step">সিক ধাপ</string>
+    <!-- Translators: Description of the seek step setting. -->
+    <string name="settings_seek_step_description">সিনেমা বা পর্বে রিওয়াইন্ড ও ফরওয়ার্ড কতটা লাফ দেবে।</string>
+    <!-- Translators: Setting label for how far rewind/forward jumps inside a live channel's archive. -->
+    <string name="settings_live_rewind_step">লাইভ রিওয়াইন্ড ধাপ</string>
+    <!-- Translators: Description of the live rewind step setting. -->
+    <string name="settings_live_rewind_step_description">লাইভ চ্যানেলের ক্যাচ-আপ আর্কাইভে রিওয়াইন্ড ও ফরওয়ার্ড কতটা সরবে।</string>
     <string name="settings_resume_playback">প্লেব্যাক চালিয়ে যান</string>
     <string name="settings_resume_playback_description">কোনো সিনেমা বা পর্বের সংরক্ষিত অবস্থান থাকলে কী করা হবে।</string>
     <string name="settings_subtitles">সাবটাইটেল</string>
@@ -370,7 +419,7 @@
     <string name="settings_audio">অডিও</string>
     <string name="settings_preferred_audio_language">পছন্দের অডিও ভাষা</string>
     <string name="settings_audio_sync">অডিও সিঙ্ক</string>
-    <string name="settings_audio_sync_description">ভিডিওর সঙ্গে মেলাতে অডিও আগে বা পরে সরান।</string>
+    <string name="settings_audio_sync_description">ভিডিওর সঙ্গে মেলাতে অডিও আগে বা পরে সরান। শুধুমাত্র mpv ইঞ্জিনে প্রযোজ্য।</string>
     <string name="settings_live_tv">লাইভ টিভি</string>
     <string name="settings_live_latency_description">লাইভ সম্প্রচারের কত কাছাকাছি চালানো হবে। মান কম হলে লাইভের কাছাকাছি থাকবে, তবে বাফার ছোট হবে—তাই দুর্বল স্ট্রিমে বেশি আটকে যেতে বা পুনরায় সংযোগ হতে পারে। পরবর্তী যে চ্যানেলটি খুলবেন, সেটিতে এটি প্রযোজ্য হবে।</string>
     <string name="settings_channel_numbers">চ্যানেল নম্বর</string>
@@ -398,7 +447,8 @@
     <string name="settings_audio_delay"><xliff:g id="delay">%1$d</xliff:g> মি.সে.</string>
     <string name="settings_external_player_description">কোন বিভাগগুলো বাহ্যিক অ্যাপে খুলবে তা বেছে নিন।</string>
     <string name="settings_audio_delay_value"><xliff:g id="delay">%1$d</xliff:g> মি.সে.</string>
-    <string name="settings_movies_player_description">mpv-তে (প্রস্তাবিত) সবচেয়ে বেশি ফরম্যাট সমর্থিত—DTS/TrueHD অডিও, অস্বাভাবিক ফাইল—এবং A/V সিঙ্ক ঠিক করার সুবিধাও আছে। সিনেমা বা পর্ব চালু না হলেই শুধু ExoPlayer-এ বদলান: নির্দিষ্ট কিছু টিভিতে mpv যে স্ট্রিম চালাতে পারে না, এটি তার কিছু চালাতে পারে; তবে DTS/TrueHD অডিও ডিকোড করতে পারে না এবং এতে A/V সিঙ্ক ঠিক করার সুবিধা নেই। যেটিই বেছে নিন, সেটি ব্যর্থ হলে অন্যটি স্বয়ংক্রিয়ভাবে চেষ্টা করা হবে।</string>
+    <string name="settings_movies_player_description">mpv (প্রস্তাবিত) সবচেয়ে বেশি ফরম্যাট সমর্থন করে — DTS/TrueHD অডিও, অস্বাভাবিক ফাইল — সঙ্গে A/V সিঙ্ক ঠিক করার সুবিধা। কিছু টিভিতে ExoPlayer এমন স্ট্রিম চালায় যা mpv পারে না, তবে এটি DTS/TrueHD অডিও ডিকোড করতে পারে না এবং এতে A/V সিঙ্ক সংশোধন নেই। যুগ্ম বিকল্পগুলিতে প্রথমটি ব্যর্থ হলে অন্য প্লেয়ার নিজে থেকেই চেষ্টা করা হয়; এক-প্লেয়ার বিকল্পে কখনও হয় না, ফলে দ্বিতীয় প্লেয়ার আপনার টিভিতে কাজ না করলে কয়েক সেকেন্ডের কালো পর্দা বাঁচে।</string>
+    <string name="settings_live_player_description">ExoPlayer (প্রস্তাবিত) চ্যানেল অনেক দ্রুত খোলে এবং লাইভ সাবটাইটেল কেবল এটিতেই আছে। mpv এমন চ্যানেলও চালায় যা ExoPlayer পারে না, অস্বাভাবিক অডিও থাকা কিছু চ্যানেল সহ। যুগ্ম বিকল্পগুলিতে প্রথমটি ব্যর্থ হলে অন্য প্লেয়ার নিজে থেকেই চেষ্টা করা হয়; এক-প্লেয়ার বিকল্পে কখনও হয় না, ফলে দ্বিতীয় প্লেয়ার আপনার টিভিতে কাজ না করলে কয়েক সেকেন্ডের কালো পর্দা বাঁচে। প্লেয়ারে হাতে বদলানো চ্যানেলে আপনার পছন্দ দুই ক্ষেত্রেই থাকে।</string>
     <string name="settings_reset_player_choices_description">প্লেয়ারে কোনো একটি সিনেমা বা পর্বকে mpv ও ExoPlayer-এর মধ্যে বদলালে সেই পছন্দ পরের বারের জন্য সংরক্ষিত হয়। রিসেট করলে সবকিছু আবার উপরের সেটিং অনুসরণ করবে। লাইভ চ্যানেলের সংরক্ষিত পছন্দগুলি অপরিবর্তিত থাকে।</string>
     <string name="settings_reset_player_choices_none">কিছুই সংরক্ষিত নেই</string>
     <plurals name="settings_reset_player_choices_count">
@@ -637,7 +687,7 @@
     <string name="settings_backup_what_backup">কী ব্যাকআপ করবেন</string>
     <string name="settings_backup_what_restore">কী পুনরুদ্ধার করবেন</string>
     <string name="settings_backup_encrypt_title">এই ব্যাকআপ এনক্রিপ্ট করবেন?</string>
-    <string name="settings_backup_encrypt_message">ব্যাকআপ পাসওয়ার্ড ব্যবহার করলে পুরো ফাইলটি এনক্রিপ্ট করা হবে—প্লেলিস্ট, প্রোফাইল ও সংরক্ষিত পাসওয়ার্ডসহ—এবং ওই পাসওয়ার্ড ছাড়া এর কিছুই পড়া যাবে না। এটি নিরাপদে রাখুন: হারিয়ে ফেললে ব্যাকআপটি কোনোভাবেই খোলা যাবে না। পাসওয়ার্ড ছাড়া ফাইলটি এনক্রিপ্ট করা হবে না এবং সংরক্ষিত পাসওয়ার্ড এতে অন্তর্ভুক্ত হবে না।</string>
+    <string name="settings_backup_encrypt_message">ব্যাকআপ পাসওয়ার্ড ব্যবহার করলে পুরো ফাইলটি এনক্রিপ্ট করা হবে—প্লেলিস্ট, প্রোফাইল ও সংরক্ষিত পাসওয়ার্ডসহ—এবং ওই পাসওয়ার্ড ছাড়া এর কিছুই পড়া যাবে না। এটি নিরাপদে রাখুন: হারিয়ে ফেললে ব্যাকআপটি কোনোভাবেই খোলা যাবে না। পাসওয়ার্ড ছাড়া ফাইলটি এনক্রিপ্ট করা হবে না এবং সংরক্ষিত পাসওয়ার্ড ও পিন এতে অন্তর্ভুক্ত হবে না।</string>
     <string name="settings_backup_export_title">একটি ব্যাকআপ এক্সপোর্ট করুন</string>
     <string name="settings_backup_export_message">একই Wi-Fi-এ থাকা অন্য ডিভাইসে (ফোন বা ল্যাপটপ) ব্যাকআপটি পাঠান, অথবা এই ডিভাইসে ফাইল হিসেবে সংরক্ষণ করুন।</string>
     <string name="settings_backup_restore_title">একটি ব্যাকআপ পুনরুদ্ধার করুন</string>
@@ -686,13 +736,13 @@
     <string name="settings_backup_section_settings">অ্যাপ সেটিংস</string>
     <string name="settings_backup_section_settings_desc">থিম, অ্যাকসেন্ট, প্লেয়ার ও বিন্যাসের পছন্দ</string>
     <string name="settings_backup_saved_to"><xliff:g id="path">%1$s</xliff:g>-এ সংরক্ষিত হয়েছে।</string>
-    <string name="settings_backup_saved_to_without_passwords"><xliff:g id="path">%1$s</xliff:g>-এ সংরক্ষিত হয়েছে। পাসওয়ার্ড অন্তর্ভুক্ত করা হয়নি।</string>
+    <string name="settings_backup_saved_to_without_passwords"><xliff:g id="path">%1$s</xliff:g>-এ সংরক্ষিত হয়েছে। পাসওয়ার্ড ও পিন অন্তর্ভুক্ত করা হয়নি।</string>
     <plurals name="settings_backup_restored">
         <item quantity="one"><xliff:g id="items">%1$d</xliff:g>টি আইটেম পুনরুদ্ধার করা হয়েছে।</item>
         <item quantity="other"><xliff:g id="items">%1$d</xliff:g>টি আইটেম পুনরুদ্ধার করা হয়েছে।</item>
     </plurals>
     <string name="settings_backup_restore_resync">কনটেন্ট লোড করতে আপনার উৎসগুলো পুনরায় সিঙ্ক করুন।</string>
-    <string name="settings_backup_restore_password_note">উৎস/প্রক্সিতে সংরক্ষিত পাসওয়ার্ডগুলো আবার লিখুন।</string>
+    <string name="settings_backup_restore_password_note">উৎস/প্রক্সিতে সংরক্ষিত পাসওয়ার্ডগুলো এবং প্রোফাইলের পিন আবার লিখুন।</string>
     <plurals name="settings_backup_skipped_sources">
         <item quantity="one">প্লেলিস্টের ধরন সমর্থিত নয় বলে <xliff:g id="count">%1$d</xliff:g>টি উৎস এড়িয়ে যাওয়া হয়েছে।</item>
         <item quantity="other">প্লেলিস্টের ধরন সমর্থিত নয় বলে <xliff:g id="count">%1$d</xliff:g>টি উৎস এড়িয়ে যাওয়া হয়েছে।</item>
@@ -909,6 +959,8 @@
     <string name="settings_font_preview">বিনোদন এখন আরও সহজ।</string>
     <string name="settings_search_keywords_fonts">ফন্ট লেখা আকার টাইপফেস পপআপ পড়া অ্যাক্সেসিবিলিটি</string>
     <string name="settings_font_system_sans">সিস্টেম স্যান্স</string>
+    <string name="settings_font_monospace">মনোস্পেস</string>
+    <string name="settings_subtitle_font">সাবটাইটেল ফন্ট</string>
     <string name="settings_glass_preset_title">রূপের প্রিসেট</string>
     <string name="settings_glass_preset_clear">স্বচ্ছ</string>
     <string name="settings_glass_preset_balanced">ভারসাম্যপূর্ণ</string>

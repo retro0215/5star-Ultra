@@ -168,6 +168,13 @@
     <string name="companion_pin_aria">PIN</string>
     <string name="companion_continue">继续</string>
     <string name="companion_pin_mismatch">该 PIN 不匹配——请重试。</string>
+    <string name="companion_tmdb_page_title">发送 TMDB 密钥</string>
+    <string name="companion_tmdb_heading">发送你的 TMDB 密钥</string>
+    <string name="companion_tmdb_description">在下方登录 TMDB，复制你的 API 密钥（v3 auth），粘贴到这里并发送到电视。个人密钥免费，而且几乎没有每日限制。</string>
+    <string name="companion_tmdb_get_key">打开 TMDB API 设置</string>
+    <string name="companion_tmdb_invalid">这看起来不像 TMDB API 密钥。请复制“API Key (v3 auth)”的值。</string>
+    <string name="companion_tmdb_sent_body">你的 TMDB 密钥已发送到电视。在电视上按保存即可开始使用。</string>
+    <string name="companion_tmdb_sent_link">发送其他密钥</string>
     <string name="companion_add_page_title">OwnTV — 添加源</string>
     <string name="companion_add_heading">添加源</string>
     <string name="companion_add_description">填写一个源并按下“发送”。源会显示在电视上——准备就绪后，拿起遥控器并在电视上按下“开始导入”。</string>
@@ -188,6 +195,8 @@
     <string name="companion_backup_description">选择 OwnTV 备份文件（.own 或较旧的 .json 文件），然后按下“发送”。文件将传输到电视——拿起遥控器并在电视上选择要恢复的内容。</string>
     <string name="companion_backup_file">备份文件</string>
     <string name="companion_choose_backup">请先选择备份文件。</string>
+    <string name="companion_playlist_file">或上传播放列表文件</string>
+    <string name="companion_playlist_url_or_file">请输入播放列表网址或选择文件。</string>
     <string name="companion_sending">正在发送…</string>
     <string name="companion_upload_failed">上传失败（HTTP <xliff:g id="status">%1$d</xliff:g>）。请检查 PIN 后重试。</string>
     <string name="companion_could_not_reach">无法连接到电视。请确保设备连接到同一 Wi-Fi 后重试。</string>

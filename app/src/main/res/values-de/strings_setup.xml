@@ -172,6 +172,13 @@
     <string name="companion_pin_aria">PIN</string>
     <string name="companion_continue">Weiter</string>
     <string name="companion_pin_mismatch">Diese PIN stimmte nicht überein — versuche es erneut.</string>
+    <string name="companion_tmdb_page_title">TMDB-Schlüssel senden</string>
+    <string name="companion_tmdb_heading">Senden Sie Ihren TMDB-Schlüssel</string>
+    <string name="companion_tmdb_description">Melden Sie sich unten bei TMDB an, kopieren Sie Ihren API-Schlüssel (v3 auth), fügen Sie ihn hier ein und senden Sie ihn an den Fernseher. Ein persönlicher Schlüssel ist kostenlos und hat praktisch kein Tageslimit.</string>
+    <string name="companion_tmdb_get_key">TMDB-API-Einstellungen öffnen</string>
+    <string name="companion_tmdb_invalid">Das sieht nicht nach einem TMDB-API-Schlüssel aus. Kopieren Sie den Wert „API Key (v3 auth)“.</string>
+    <string name="companion_tmdb_sent_body">Ihr TMDB-Schlüssel ist jetzt auf dem Fernseher. Drücken Sie dort auf Speichern, um ihn zu verwenden.</string>
+    <string name="companion_tmdb_sent_link">Anderen Schlüssel senden</string>
     <string name="companion_add_page_title">OwnTV — Quelle hinzufügen</string>
     <string name="companion_add_heading">Quelle hinzufügen</string>
     <string name="companion_add_description">Füllen Sie die Angaben für eine Quelle aus und drücken Sie „Senden“. Sie wird auf dem Fernseher angezeigt — nehmen Sie die Fernbedienung und drücken Sie dort „Importieren starten“, wenn Sie bereit sind.</string>
@@ -192,6 +199,8 @@
     <string name="companion_backup_description">Wähle eine OwnTV-Sicherungsdatei (.own oder eine ältere .json-Datei) aus und drücke auf „Senden“. Sie wird auf den TV übertragen — nimm die Fernbedienung und wähle dort aus, was wiederhergestellt werden soll.</string>
     <string name="companion_backup_file">Sicherungsdatei</string>
     <string name="companion_choose_backup">Wähle zuerst eine Sicherungsdatei aus.</string>
+    <string name="companion_playlist_file">Oder eine Playlist-Datei hochladen</string>
+    <string name="companion_playlist_url_or_file">Gib eine Playlist-URL ein oder wähle eine Datei aus.</string>
     <string name="companion_sending">Wird gesendet…</string>
     <string name="companion_upload_failed">Upload fehlgeschlagen (HTTP <xliff:g id="status">%1$d</xliff:g>). Prüfe die PIN und versuche es erneut.</string>
     <string name="companion_could_not_reach">Der TV konnte nicht erreicht werden. Bleibe im selben Wi-Fi und versuche es erneut.</string>

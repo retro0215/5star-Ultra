@@ -94,12 +94,25 @@
     <string name="settings_metadata_provider_tmdb_description">Údaje z playlistu mají přednost; TMDB doplní chybějící informace a přidá obsazení, žánry a obrázky na pozadí.</string>
     <string name="settings_metadata_tmdb_only_description">U všech polí upřednostnit TMDB; údaje z playlistu použít pouze v případě, že TMDB nic nenajde.</string>
     <string name="settings_selected">Vybrané</string>
-    <string name="settings_active_tmdb_source">Aktivní zdroj TMDB: <xliff:g id="tier">%1$s</xliff:g></string>
+    <string name="settings_metadata_allowance">Váš denní podíl</string>
+    <string name="settings_metadata_usage_label">Využití</string>
+    <string name="settings_metadata_usage_value"><xliff:g id="min_used">%1$d</xliff:g>/<xliff:g id="min_total">%2$d</xliff:g> min · <xliff:g id="hr_used">%3$d</xliff:g>/<xliff:g id="hr_total">%4$d</xliff:g> hod. · <xliff:g id="day_used">%5$d</xliff:g>/<xliff:g id="day_total">%6$d</xliff:g> den</string>
+    <string name="settings_metadata_source_label">Zdroj</string>
+    <string name="settings_metadata_key_label">Klíč</string>
+    <string name="settings_metadata_server_label">Server</string>
+    <string name="settings_metadata_refills_label">Obnoví se v</string>
+    <string name="settings_metadata_clear_advanced_title">Přestat používat vlastní klíč?</string>
+    <string name="settings_metadata_clear_advanced_message">Váš klíč API TMDB a adresa vlastního serveru budou z tohoto zařízení smazány a OwnTV se vrátí k vestavěné sdílené službě s jejím denním podílem.</string>
+    <string name="settings_metadata_fair_share">Vestavěnou službu metadat sdílejí všichni uživatelé OwnTV, takže každé zařízení dostává každý den vlastní podíl. Pokud svůj podíl vyčerpáte, plakáty a popisy se pozastaví, dokud se podíl neobnoví — informace z vaší vlastní playlistu fungují dál normálně. Přidání vlastního klíče API TMDB nebo serveru toto omezení odstraní: je zdarma a osobní klíč prakticky žádný limit nemá.</string>
+    <string name="settings_metadata_limit_reached">Denní podíl metadat je vyčerpán — přidejte v Nastavení → Metadata vlastní klíč TMDB a toto omezení zmizí.</string>
     <string name="settings_metadata_language">Jazyk metadat</string>
-    <string name="settings_metadata_language_description">Jazyk popisů děje, žánrů a názvů z TMDB. Pole, která TMDB nepřeložilo, zůstanou v angličtině. Při změně se vymažou podrobnosti z mezipaměti, aby se načetly znovu.</string>
+    <string name="settings_metadata_language_description">Jazyk popisů, žánrů a názvů z TMDB. Pole, která TMDB nepřeložilo, zůstanou anglicky. Podrobnosti se ukládají do mezipaměti pro každý jazyk, takže přepnutí zpět je okamžité.</string>
     <string name="settings_advanced_options">Pokročilé možnosti</string>
     <string name="settings_advanced_metadata_description">Používejte místo výchozího sdíleného nastavení vlastní klíč API TMDB nebo vlastní server.</string>
     <string name="settings_metadata_server_description">Chcete-li použít integrovaný sdílený server bez dalšího nastavení, ponechte obě pole prázdná. Chcete-li volat TMDB přímo, zadejte vlastní klíč API TMDB. Případně zadejte URL vlastního serveru a používejte vlastní proxy či zrcadlo. URL má přednost před klíčem.</string>
+    <string name="settings_metadata_key_from_phone">Získat klíč z telefonu</string>
+    <string name="settings_metadata_key_from_phone_desc">Naskenujte telefonem kód, přihlaste se tam k TMDB a odešlete klíč. Na dálkovém ovladači není co psát.</string>
+    <string name="settings_metadata_key_received">Klíč TMDB přijat z telefonu</string>
     <string name="settings_tmdb_api_key">Klíč API TMDB (v3)</string>
     <string name="settings_self_host_url">URL vlastního serveru</string>
     <string name="settings_test">Test</string>
@@ -353,11 +366,47 @@
     <string name="settings_decoding">Dekódování</string>
     <string name="settings_hardware_decoding">Hardwarové dekódování</string>
     <string name="settings_hardware_decoding_description">Používat hardwarový dekodér televizoru. Vypněte, pokud se některé streamy sekají nebo zobrazují obrazové vady.</string>
+    <!-- Translators: Setting label for deinterlacing of interlaced broadcast video. -->
+    <string name="settings_deinterlace">Odstranění prokládání</string>
+    <!-- Translators: Description of the deinterlacing setting. -->
+    <string name="settings_deinterlace_description">Vyhladí hřebenovité čáry, které některé staré SD kanály ukazují při pohybu. Platí pro přehrávač mpv, když sám vykresluje obraz — pokud to nic nezmění, vypněte hardwarové dekódování.</string>
     <string name="settings_movies_series_player">Přehrávač filmů a seriálů</string>
+    <string name="settings_live_tv_player">Přehrávač živého vysílání</string>
+    <string name="settings_engine_order"><xliff:g id="first">%1$s</xliff:g>, poté <xliff:g id="second">%2$s</xliff:g></string>
+    <string name="settings_engine_only">Pouze <xliff:g id="engine">%1$s</xliff:g></string>
+    <string name="settings_engine_default"><xliff:g id="option">%1$s</xliff:g> (výchozí)</string>
     <string name="settings_reset_player_choices">Resetovat uložené volby přehrávače</string>
     <string name="settings_external_player">Externí přehrávač</string>
     <string name="settings_default_zoom">Výchozí přiblížení</string>
     <string name="settings_default_zoom_description">Poměr stran a přiblížení použité při zahájení přehrávání.</string>
+    <!-- Translators: Setting label for the volume level playback starts at. -->
+    <string name="settings_default_volume">Výchozí hlasitost</string>
+    <!-- Translators: Description of the default volume setting. -->
+    <string name="settings_default_volume_description">Hlasitost použitá při zahájení přehrávání. Nad 100 %% se tiché streamy zesilují.</string>
+    <!-- Translators: Settings-row title for forgetting the zoom saved for individual items. -->
+    <string name="settings_reset_saved_zoom">Resetovat uložené přiblížení</string>
+    <!-- Translators: Description of the reset-saved-zoom setting row. -->
+    <string name="settings_reset_saved_zoom_description">Změna přiblížení v přehrávači se uloží pro daný kanál, film nebo epizodu. Reset vrátí vše zpět k výchozímu přiblížení.</string>
+    <!-- Translators: Confirmation dialog title before forgetting the saved per-item zoom. -->
+    <string name="settings_reset_saved_zoom_confirm">Resetovat uložené přiblížení?</string>
+    <!-- Translators: Confirmation dialog body before forgetting the saved per-item zoom. -->
+    <string name="settings_reset_saved_zoom_confirm_description">Každý kanál, film i epizoda se vrátí k výchozímu přiblížení. Uložené hlasitosti zůstanou zachovány. Jednotlivou položku můžete kdykoli znovu nastavit přímo v přehrávači.</string>
+    <!-- Translators: Settings-row title for forgetting the volume saved for individual items. -->
+    <string name="settings_reset_saved_volume">Resetovat uloženou hlasitost</string>
+    <!-- Translators: Description of the reset-saved-volume setting row. -->
+    <string name="settings_reset_saved_volume_description">Změna hlasitosti v přehrávači se uloží pro daný kanál, film nebo epizodu. Reset vrátí vše zpět k výchozí hlasitosti.</string>
+    <!-- Translators: Confirmation dialog title before forgetting the saved per-item volume. -->
+    <string name="settings_reset_saved_volume_confirm">Resetovat uloženou hlasitost?</string>
+    <!-- Translators: Confirmation dialog body before forgetting the saved per-item volume. -->
+    <string name="settings_reset_saved_volume_confirm_description">Každý kanál, film i epizoda se vrátí k výchozí hlasitosti. Uložená nastavení přiblížení zůstanou zachována. Jednotlivou položku můžete kdykoli znovu nastavit přímo v přehrávači.</string>
+    <!-- Translators: Setting label for how far rewind/forward jumps in a movie or episode. -->
+    <string name="settings_seek_step">Krok převíjení</string>
+    <!-- Translators: Description of the seek step setting. -->
+    <string name="settings_seek_step_description">O kolik posune převíjení vzad a vpřed ve filmu nebo epizodě.</string>
+    <!-- Translators: Setting label for how far rewind/forward jumps inside a live channel's archive. -->
+    <string name="settings_live_rewind_step">Krok převíjení živého vysílání</string>
+    <!-- Translators: Description of the live rewind step setting. -->
+    <string name="settings_live_rewind_step_description">O kolik se převíjení vzad a vpřed pohybuje v archivu živého kanálu.</string>
     <string name="settings_resume_playback">Pokračovat v přehrávání</string>
     <string name="settings_resume_playback_description">Co udělat, když má film nebo epizoda uloženou pozici.</string>
     <string name="settings_subtitles">Titulky</string>
@@ -372,7 +421,7 @@
     <string name="settings_audio">Zvuk</string>
     <string name="settings_preferred_audio_language">Preferovaný jazyk zvuku</string>
     <string name="settings_audio_sync">Synchronizace zvuku</string>
-    <string name="settings_audio_sync_description">Posuňte zvuk dopředu nebo dozadu, aby odpovídal obrazu.</string>
+    <string name="settings_audio_sync_description">Posuňte zvuk dopředu nebo dozadu, aby odpovídal obrazu. Platí pouze pro přehrávač mpv.</string>
     <string name="settings_live_tv">Živé vysílání</string>
     <string name="settings_live_latency_description">Určuje, jak blízko aktuálnímu vysílání se má přehrávat. Nižší hodnota znamená menší zpoždění oproti živému vysílání, ale také menší vyrovnávací paměť, takže slabé streamy se mohou častěji zadrhávat nebo znovu připojovat. Použije se u dalšího kanálu, který otevřete.</string>
     <string name="settings_channel_numbers">Čísla kanálů</string>
@@ -400,7 +449,8 @@
     <string name="settings_audio_delay"><xliff:g id="delay">%1$d</xliff:g> ms</string>
     <string name="settings_external_player_description">Vyberte, které sekce se mají otevírat v externí aplikaci.</string>
     <string name="settings_audio_delay_value"><xliff:g id="delay">%1$d</xliff:g> ms</string>
-    <string name="settings_movies_player_description">mpv (doporučeno) podporuje nejširší škálu formátů — zvuk DTS/TrueHD, neobvyklé soubory — a také nabízí opravu synchronizace A/V. Na ExoPlayer přepněte pouze tehdy, pokud se filmy nebo epizody nespustí: na některých televizorech přehraje určité streamy, které mpv přehrát nedokáže, ale neumí dekódovat zvuk DTS/TrueHD a nenabízí opravu synchronizace A/V. Ať zvolíte kterýkoli, při selhání se automaticky vyzkouší druhý.</string>
+    <string name="settings_movies_player_description">mpv (doporučeno) má nejširší podporu formátů — zvuk DTS/TrueHD, neobvyklé soubory — a navíc opravu synchronizace zvuku a obrazu. ExoPlayer na některých televizích přehraje streamy, na které mpv nestačí, neumí však dekódovat zvuk DTS/TrueHD a opravu synchronizace nemá. Kombinované možnosti při selhání prvního přehrávače automaticky zkusí druhý; možnosti s jediným přehrávačem to nedělají nikdy, což ušetří několik vteřin černé obrazovky, pokud druhý přehrávač na vaší televizi stejně nefunguje.</string>
+    <string name="settings_live_player_description">ExoPlayer (doporučeno) otevírá kanály mnohem rychleji a jako jediný zvládá titulky v živém vysílání. mpv přehraje kanály, na které ExoPlayer nestačí, včetně některých s neobvyklým zvukem. Kombinované možnosti při selhání prvního přehrávače automaticky zkusí druhý; možnosti s jediným přehrávačem to nedělají nikdy, což ušetří několik vteřin černé obrazovky, pokud druhý přehrávač na vaší televizi stejně nefunguje. U kanálu přepnutého ručně v přehrávači zůstane vaše volba tak jako tak.</string>
     <string name="settings_reset_player_choices_description">Když v přehrávači přepnete jednotlivý film nebo epizodu mezi mpv a ExoPlayerem, tato volba se uloží pro příště. Reset vrátí vše zpět k nastavení výše. Uložené volby pro živé kanály zůstávají zachovány.</string>
     <string name="settings_reset_player_choices_none">Nic uloženo</string>
     <plurals name="settings_reset_player_choices_count">
@@ -653,7 +703,7 @@
     <string name="settings_backup_what_backup">Co zálohovat</string>
     <string name="settings_backup_what_restore">Co obnovit</string>
     <string name="settings_backup_encrypt_title">Zašifrovat tuto zálohu?</string>
-    <string name="settings_backup_encrypt_message">Pokud nastavíte heslo zálohy, bude zašifrován celý soubor — včetně playlistů, profilů a uložených hesel — a bez tohoto hesla z něj nebude možné nic přečíst. Heslo bezpečně uschovejte: pokud jej ztratíte, zálohu nebude možné vůbec otevřít. Bez hesla nebude soubor zašifrován a uložená hesla v něm nebudou zahrnuta.</string>
+    <string name="settings_backup_encrypt_message">Pokud nastavíte heslo zálohy, bude zašifrován celý soubor — včetně playlistů, profilů a uložených hesel — a bez tohoto hesla z něj nebude možné nic přečíst. Heslo bezpečně uschovejte: pokud jej ztratíte, zálohu nebude možné vůbec otevřít. Bez hesla nebude soubor zašifrován a uložená hesla ani PINy v něm nebudou zahrnuty.</string>
     <string name="settings_backup_export_title">Exportovat zálohu</string>
     <string name="settings_backup_export_message">Odešlete zálohu do jiného zařízení (telefonu nebo notebooku) připojeného ke stejné síti Wi-Fi nebo ji uložte do souboru v tomto zařízení.</string>
     <string name="settings_backup_restore_title">Obnovit zálohu</string>
@@ -702,7 +752,7 @@
     <string name="settings_backup_section_settings">Nastavení aplikace</string>
     <string name="settings_backup_section_settings_desc">Předvolby motivu, barvy zvýraznění, přehrávače a rozvržení</string>
     <string name="settings_backup_saved_to">Uloženo do <xliff:g id="path">%1$s</xliff:g>.</string>
-    <string name="settings_backup_saved_to_without_passwords">Uloženo do <xliff:g id="path">%1$s</xliff:g>. Hesla nebyla zahrnuta.</string>
+    <string name="settings_backup_saved_to_without_passwords">Uloženo do <xliff:g id="path">%1$s</xliff:g>. Hesla ani PINy nebyly zahrnuty.</string>
     <plurals name="settings_backup_restored">
         <item quantity="one">Obnovena <xliff:g id="items">%1$d</xliff:g> položka.</item>
         <item quantity="few">Obnoveny <xliff:g id="items">%1$d</xliff:g> položky.</item>
@@ -710,7 +760,7 @@
         <item quantity="other">Obnoveno <xliff:g id="items">%1$d</xliff:g> položek.</item>
     </plurals>
     <string name="settings_backup_restore_resync">Opětovnou synchronizací zdrojů načtěte obsah.</string>
-    <string name="settings_backup_restore_password_note">V části Zdroje/Proxy znovu zadejte všechna uložená hesla.</string>
+    <string name="settings_backup_restore_password_note">V části Zdroje/Proxy znovu zadejte všechna uložená hesla a případné PINy profilů.</string>
     <plurals name="settings_backup_skipped_sources">
         <item quantity="one"><xliff:g id="count">%1$d</xliff:g> zdroj byl přeskočen, protože jeho typ playlistu není podporován.</item>
         <item quantity="few"><xliff:g id="count">%1$d</xliff:g> zdroje byly přeskočeny, protože jejich typy playlistů nejsou podporovány.</item>
@@ -943,6 +993,8 @@
     <string name="settings_font_preview">Zábava jednoduše.</string>
     <string name="settings_search_keywords_fonts">písmo text velikost typografie okno čtení přístupnost</string>
     <string name="settings_font_system_sans">Systémové bezpatkové</string>
+    <string name="settings_font_monospace">Neproporcionální</string>
+    <string name="settings_subtitle_font">Písmo titulků</string>
     <string name="settings_glass_preset_title">Předvolba vzhledu</string>
     <string name="settings_glass_preset_clear">Čiré</string>
     <string name="settings_glass_preset_balanced">Vyvážené</string>

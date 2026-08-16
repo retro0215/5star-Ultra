@@ -26,6 +26,7 @@ import org.koin.compose.koinInject
 import tv.own.owntv.features.settings.data.SettingsRepository
 import tv.own.owntv.features.settings.data.SubtitleStyle
 import tv.own.owntv.ui.theme.LocalUiFontScaleFactor
+import tv.own.owntv.ui.theme.asComposeFamily
 
 /**
  * App-drawn subtitles for the direct render path: the decoder owns the video surface there, so mpv
@@ -46,6 +47,7 @@ fun SubtitleOverlay(
     // 45%-black box, centred 56dp above the bottom edge.
     val styleOn by settings.subtitleStyleEnabled.collectAsStateWithLifecycle(initialValue = false)
     val scale by settings.subtitleScale.collectAsStateWithLifecycle(initialValue = SubtitleStyle.SCALE_DEFAULT)
+    val font by settings.subtitleFont.collectAsStateWithLifecycle(initialValue = null)
     val colorHex by settings.subtitleColor.collectAsStateWithLifecycle(initialValue = SubtitleStyle.COLOR_DEFAULT)
     val position by settings.subtitlePosition.collectAsStateWithLifecycle(initialValue = SubtitleStyle.Position.DEFAULT)
     val bgOpacity by settings.subtitleBgOpacity.collectAsStateWithLifecycle(initialValue = SubtitleStyle.OPACITY_DEFAULT)
@@ -62,21 +64,8 @@ fun SubtitleOverlay(
     // Font customization is UI-only. Subtitles keep their dedicated size control and system family.
     val uiFontCompensation = 1f / LocalUiFontScaleFactor.current
 
-    // Same six anchors the SubtitleView path uses, so a channel sits in the same place whether it
-    // plays on mpv or ExoPlayer. Default keeps the historical bottom-centre placement.
-    val alignment = when {
-        anchor.isTop && anchor.isLeft -> Alignment.TopStart
-        anchor.isTop && anchor.isRight -> Alignment.TopEnd
-        anchor.isTop -> Alignment.TopCenter
-        anchor.isLeft -> Alignment.BottomStart
-        anchor.isRight -> Alignment.BottomEnd
-        else -> Alignment.BottomCenter
-    }
-    val textAlign = when {
-        anchor.isLeft -> TextAlign.Start
-        anchor.isRight -> TextAlign.End
-        else -> TextAlign.Center
-    }
+    val alignment = anchor.alignment()
+    val textAlign = anchor.textAlign()
     Box(
         modifier = modifier
             .fillMaxSize()
@@ -93,7 +82,7 @@ fun SubtitleOverlay(
                 color = textColor,
                 fontSize = (24 * textScale * sizeScale * uiFontCompensation).sp,
                 lineHeight = (30 * textScale * sizeScale * uiFontCompensation).sp,
-                fontFamily = FontFamily.SansSerif,
+                fontFamily = if (styleOn) font?.asComposeFamily() ?: FontFamily.SansSerif else FontFamily.SansSerif,
                 fontWeight = FontWeight.Medium,
                 shadow = Shadow(color = Color.Black, offset = Offset(0f, 2f), blurRadius = 6f),
             ),
@@ -104,4 +93,29 @@ fun SubtitleOverlay(
                 .padding(horizontal = 16.dp * sizeScale, vertical = 6.dp * sizeScale),
         )
     }
+}
+
+/**
+ * The one derivation of a subtitle anchor into Compose layout — used by this overlay and by both
+ * previews in Settings, so the picker cannot show a corner the player then renders somewhere else.
+ *
+ * Six fixed anchors; anything unrecognised keeps the historical bottom-centre placement. The Media3
+ * `Cue` path in [MpvVideoSurface] expresses the same six positions in Media3's own line/position
+ * fraction geometry rather than in Compose types, so it necessarily stays a separate mapping — but it
+ * reads the same [SubtitleStyle.Position] flags, and there is nowhere else these are derived.
+ */
+internal fun SubtitleStyle.Position.alignment(): Alignment = when {
+    isTop && isLeft -> Alignment.TopStart
+    isTop && isRight -> Alignment.TopEnd
+    isTop -> Alignment.TopCenter
+    isLeft -> Alignment.BottomStart
+    isRight -> Alignment.BottomEnd
+    else -> Alignment.BottomCenter
+}
+
+/** Text alignment matching [alignment] — a left-anchored block reads ragged-right, and vice versa. */
+internal fun SubtitleStyle.Position.textAlign(): TextAlign = when {
+    isLeft -> TextAlign.Start
+    isRight -> TextAlign.End
+    else -> TextAlign.Center
 }

@@ -94,12 +94,25 @@
     <string name="settings_metadata_provider_tmdb_description">优先使用播放列表的信息；TMDB 会填补缺失信息，并添加演职人员、类型和背景图。</string>
     <string name="settings_metadata_tmdb_only_description">所有字段优先使用 TMDB；仅当 TMDB 没有信息时才回退到播放列表。</string>
     <string name="settings_selected">已选择</string>
-    <string name="settings_active_tmdb_source">当前 TMDB 源：<xliff:g id="tier">%1$s</xliff:g></string>
+    <string name="settings_metadata_allowance">每日额度</string>
+    <string name="settings_metadata_usage_label">用量</string>
+    <string name="settings_metadata_usage_value"><xliff:g id="min_used">%1$d</xliff:g>/<xliff:g id="min_total">%2$d</xliff:g> 分钟 · <xliff:g id="hr_used">%3$d</xliff:g>/<xliff:g id="hr_total">%4$d</xliff:g> 小时 · <xliff:g id="day_used">%5$d</xliff:g>/<xliff:g id="day_total">%6$d</xliff:g> 天</string>
+    <string name="settings_metadata_source_label">来源</string>
+    <string name="settings_metadata_key_label">密钥</string>
+    <string name="settings_metadata_server_label">服务器</string>
+    <string name="settings_metadata_refills_label">恢复时间</string>
+    <string name="settings_metadata_clear_advanced_title">不再使用你自己的密钥？</string>
+    <string name="settings_metadata_clear_advanced_message">你的 TMDB API 密钥和自有服务器地址将从此设备删除，OwnTV 将回到带有每日额度的内置共享服务。</string>
+    <string name="settings_metadata_fair_share">内置元数据服务由所有 OwnTV 用户共享，因此每台设备每天都有自己的额度。用完额度后，海报和简介会暂停显示，直到额度恢复；播放列表自带的信息不受影响。添加你自己的 TMDB API 密钥或服务器即可取消此限制：它是免费的，而且个人密钥几乎没有限制。</string>
+    <string name="settings_metadata_limit_reached">今日元数据额度已用完 — 在“设置 → 元数据”中添加你自己的 TMDB 密钥即可取消此限制。</string>
     <string name="settings_metadata_language">元数据语言</string>
-    <string name="settings_metadata_language_description">TMDB 中剧情简介、类型和标题所使用的语言。TMDB 尚未翻译的字段仍会以英语显示。更改此设置会清除已缓存的详细信息，以便重新获取。</string>
+    <string name="settings_metadata_language_description">TMDB 提供的剧情、类型和标题的语言。TMDB 未翻译的字段将保持英文。详细信息按语言分别缓存，因此切换回来是即时的。</string>
     <string name="settings_advanced_options">高级选项</string>
     <string name="settings_advanced_metadata_description">使用你自己的 TMDB API 密钥或自托管服务器，而不是默认的共享服务。</string>
     <string name="settings_metadata_server_description">两项均留空即可使用内置共享服务器（无需初始设置）。输入你自己的 TMDB API 密钥可直接调用 TMDB，或输入自托管服务器 URL 以使用自己的代理/镜像。URL 的优先级高于密钥。</string>
+    <string name="settings_metadata_key_from_phone">用手机获取密钥</string>
+    <string name="settings_metadata_key_from_phone_desc">用手机扫描二维码，在手机上登录 TMDB 并发送密钥。无需用遥控器输入。</string>
+    <string name="settings_metadata_key_received">已从手机接收 TMDB 密钥</string>
     <string name="settings_tmdb_api_key">TMDB API 密钥（v3）</string>
     <string name="settings_self_host_url">自托管服务器 URL</string>
     <string name="settings_test">测试</string>
@@ -350,11 +363,47 @@
     <string name="settings_decoding">解码</string>
     <string name="settings_hardware_decoding">硬件解码</string>
     <string name="settings_hardware_decoding_description">使用电视的硬件解码器。如果部分流媒体出现卡顿或画面伪影，请关闭此功能。</string>
+    <!-- Translators: Setting label for deinterlacing of interlaced broadcast video. -->
+    <string name="settings_deinterlace">去隔行</string>
+    <!-- Translators: Description of the deinterlacing setting. -->
+    <string name="settings_deinterlace_description">平滑某些老旧标清频道在画面移动时出现的梳状条纹。仅在 mpv 自行绘制画面时生效，因此如果没有变化，请关闭硬件解码。</string>
     <string name="settings_movies_series_player">电影和剧集播放器</string>
+    <string name="settings_live_tv_player">直播电视播放器</string>
+    <string name="settings_engine_order">先 <xliff:g id="first">%1$s</xliff:g>，后 <xliff:g id="second">%2$s</xliff:g></string>
+    <string name="settings_engine_only">仅 <xliff:g id="engine">%1$s</xliff:g></string>
+    <string name="settings_engine_default"><xliff:g id="option">%1$s</xliff:g>（默认）</string>
     <string name="settings_reset_player_choices">重置已保存的播放器选择</string>
     <string name="settings_external_player">外部播放器</string>
     <string name="settings_default_zoom">默认缩放</string>
     <string name="settings_default_zoom_description">播放开始时应用的宽高比/缩放设置。</string>
+    <!-- Translators: Setting label for the volume level playback starts at. -->
+    <string name="settings_default_volume">默认音量</string>
+    <!-- Translators: Description of the default volume setting. -->
+    <string name="settings_default_volume_description">播放开始时应用的音量。超过 100%% 时，声音较小的流会被放大。</string>
+    <!-- Translators: Settings-row title for forgetting the zoom saved for individual items. -->
+    <string name="settings_reset_saved_zoom">重置已保存的缩放</string>
+    <!-- Translators: Description of the reset-saved-zoom setting row. -->
+    <string name="settings_reset_saved_zoom_description">在播放器中更改缩放后，该设置会为对应的频道、电影或剧集保存下来。重置后，所有内容将重新遵循默认缩放。</string>
+    <!-- Translators: Confirmation dialog title before forgetting the saved per-item zoom. -->
+    <string name="settings_reset_saved_zoom_confirm">要重置已保存的缩放吗？</string>
+    <!-- Translators: Confirmation dialog body before forgetting the saved per-item zoom. -->
+    <string name="settings_reset_saved_zoom_confirm_description">所有频道、电影和剧集将恢复为默认缩放。已保存的音量会保留。你随时可以在播放器中再次单独设置某一项。</string>
+    <!-- Translators: Settings-row title for forgetting the volume saved for individual items. -->
+    <string name="settings_reset_saved_volume">重置已保存的音量</string>
+    <!-- Translators: Description of the reset-saved-volume setting row. -->
+    <string name="settings_reset_saved_volume_description">在播放器中更改音量后，该设置会为对应的频道、电影或剧集保存下来。重置后，所有内容将重新遵循默认音量。</string>
+    <!-- Translators: Confirmation dialog title before forgetting the saved per-item volume. -->
+    <string name="settings_reset_saved_volume_confirm">要重置已保存的音量吗？</string>
+    <!-- Translators: Confirmation dialog body before forgetting the saved per-item volume. -->
+    <string name="settings_reset_saved_volume_confirm_description">所有频道、电影和剧集将恢复为默认音量。已保存的缩放设置会保留。你随时可以在播放器中再次单独设置某一项。</string>
+    <!-- Translators: Setting label for how far rewind/forward jumps in a movie or episode. -->
+    <string name="settings_seek_step">快进步长</string>
+    <!-- Translators: Description of the seek step setting. -->
+    <string name="settings_seek_step_description">在电影或剧集中，快退和快进一次移动的时长。</string>
+    <!-- Translators: Setting label for how far rewind/forward jumps inside a live channel's archive. -->
+    <string name="settings_live_rewind_step">直播回看步长</string>
+    <!-- Translators: Description of the live rewind step setting. -->
+    <string name="settings_live_rewind_step_description">在直播频道的回看存档中，快退和快进一次移动的时长。</string>
     <string name="settings_resume_playback">继续播放</string>
     <string name="settings_resume_playback_description">电影或剧集存在已保存的播放位置时要执行的操作。</string>
     <string name="settings_subtitles">字幕</string>
@@ -369,7 +418,7 @@
     <string name="settings_audio">音频</string>
     <string name="settings_preferred_audio_language">首选音频语言</string>
     <string name="settings_audio_sync">音视频同步</string>
-    <string name="settings_audio_sync_description">将音频提前或延后，使其与视频匹配。</string>
+    <string name="settings_audio_sync_description">将音频提前或延后，使其与视频匹配。仅适用于 mpv 引擎。</string>
     <string name="settings_live_tv">直播电视</string>
     <string name="settings_live_latency_description">设置播放位置与直播的接近程度。数值越低，越接近直播，但缓冲区也越小，因此信号较弱的流可能更容易卡顿或重新连接。此设置将在您下次打开频道时生效。</string>
     <string name="settings_channel_numbers">频道编号</string>
@@ -397,7 +446,8 @@
     <string name="settings_audio_delay"><xliff:g id="delay">%1$d</xliff:g> 毫秒</string>
     <string name="settings_external_player_description">选择要在外部应用中打开的内容板块。</string>
     <string name="settings_audio_delay_value"><xliff:g id="delay">%1$d</xliff:g> 毫秒</string>
-    <string name="settings_movies_player_description">mpv（推荐）支持的格式最广，包括 DTS/TrueHD 音频和少见文件，并提供音视频同步修正。仅当电影或剧集无法开始播放时才切换到 ExoPlayer：在某些电视上，它可以播放部分 mpv 无法播放的流，但无法解码 DTS/TrueHD 音频，也不提供音视频同步修正。无论选择哪一个，如果播放失败，系统都会自动尝试另一个。</string>
+    <string name="settings_movies_player_description">mpv（推荐）支持的格式最广——DTS/TrueHD 音频、少见的文件——还带有音画同步修正。在某些电视上，ExoPlayer 能播放 mpv 打不开的流，但它无法解码 DTS/TrueHD 音频，也没有音画同步修正。组合选项会在第一个播放器失败时自动尝试另一个；单一播放器选项则从不尝试，如果另一个播放器在你的电视上本来就用不了，这样可以省下几秒钟黑屏。</string>
+    <string name="settings_live_player_description">ExoPlayer（推荐）打开频道快得多，也是唯一支持直播字幕的播放器。mpv 能播放 ExoPlayer 打不开的频道，包括一些音频格式少见的频道。组合选项会在第一个播放器失败时自动尝试另一个；单一播放器选项则从不尝试，如果另一个播放器在你的电视上本来就用不了，这样可以省下几秒钟黑屏。在播放器里手动切换过的频道，两种情况下都会保留你的选择。</string>
     <string name="settings_reset_player_choices_description">在播放器中将单个电影或剧集在 mpv 与 ExoPlayer 之间切换后，该选择会保存下来供下次使用。重置后，所有内容将重新遵循上面的设置。直播频道已保存的选择会保留。</string>
     <string name="settings_reset_player_choices_none">未保存任何选择</string>
     <plurals name="settings_reset_player_choices_count">
@@ -629,7 +679,7 @@
     <string name="settings_backup_what_backup">要备份的内容</string>
     <string name="settings_backup_what_restore">要恢复的内容</string>
     <string name="settings_backup_encrypt_title">加密此备份？</string>
-    <string name="settings_backup_encrypt_message">设置备份密码后，整个文件都会被加密，包括播放列表、用户档案和已保存的密码；没有该密码将无法读取其中任何内容。请妥善保管：如果丢失密码，将完全无法打开此备份。不设置密码时，文件不会加密，且不会包含已保存的密码。</string>
+    <string name="settings_backup_encrypt_message">设置备份密码后，整个文件都会被加密，包括播放列表、用户档案和已保存的密码；没有该密码将无法读取其中任何内容。请妥善保管：如果丢失密码，将完全无法打开此备份。不设置密码时，文件不会加密，且不会包含已保存的密码和 PIN 码。</string>
     <string name="settings_backup_export_title">导出备份</string>
     <string name="settings_backup_export_message">将备份发送到连接同一 Wi-Fi 的其他设备（手机或笔记本电脑），或将其保存为此设备上的文件。</string>
     <string name="settings_backup_restore_title">恢复备份</string>
@@ -678,12 +728,12 @@
     <string name="settings_backup_section_settings">应用设置</string>
     <string name="settings_backup_section_settings_desc">主题、强调色、播放器和布局偏好设置</string>
     <string name="settings_backup_saved_to">已保存到 <xliff:g id="path">%1$s</xliff:g>。</string>
-    <string name="settings_backup_saved_to_without_passwords">已保存到 <xliff:g id="path">%1$s</xliff:g>。未包含密码。</string>
+    <string name="settings_backup_saved_to_without_passwords">已保存到 <xliff:g id="path">%1$s</xliff:g>。未包含密码和 PIN 码。</string>
     <plurals name="settings_backup_restored">
         <item quantity="other">已恢复 <xliff:g id="items">%1$d</xliff:g> 个项目。</item>
     </plurals>
     <string name="settings_backup_restore_resync">请重新同步您的源以加载内容。</string>
-    <string name="settings_backup_restore_password_note">请在“源/代理”中重新输入所有已保存的密码。</string>
+    <string name="settings_backup_restore_password_note">请在“源/代理”中重新输入所有已保存的密码，以及各用户档案的 PIN 码。</string>
     <plurals name="settings_backup_skipped_sources">
         <item quantity="other">由于播放列表类型不受支持，已跳过 <xliff:g id="count">%1$d</xliff:g> 个源。</item>
     </plurals>
@@ -892,6 +942,8 @@
     <string name="settings_font_preview">娱乐，从此更简单。</string>
     <string name="settings_search_keywords_fonts">字体 文字 大小 字型 弹窗 阅读 无障碍</string>
     <string name="settings_font_system_sans">系统无衬线字体</string>
+    <string name="settings_font_monospace">等宽字体</string>
+    <string name="settings_subtitle_font">字幕字体</string>
     <string name="settings_glass_preset_title">外观预设</string>
     <string name="settings_glass_preset_clear">清透</string>
     <string name="settings_glass_preset_balanced">平衡</string>

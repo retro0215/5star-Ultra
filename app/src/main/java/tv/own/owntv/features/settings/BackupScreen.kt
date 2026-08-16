@@ -115,6 +115,10 @@ fun BackupScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
     // Dialog-close focus return: closing the section picker / file browser refocuses the button
     // that opened it. The restore crosses INTO this group from the dialog, so onEnter intercepts
     // it — it consults dialogReturn first (and clears it) instead of hijacking.
+    // Deliberately NOT tv.own.owntv.ui.components.rememberDialogFocusRestore: the onEnter below also
+    // reads and clears this, and the shared helper clears it right after its own restore. Which of the
+    // two wins would come down to whether onEnter runs inside requestFocus(), and this screen's restore
+    // is not worth betting on that ordering.
     var dialogReturn by remember { mutableStateOf<FocusRequester?>(null) }
     val anyDialogOpen = showBrowser || showExportPicker || showProfilePicker || pendingFolderBrowser || exportFolder != null ||
         showRestoreChooser || showRemoteRestore || showExportChooser || showRemoteExportPassword || showRemoteExport ||
@@ -430,9 +434,16 @@ private fun BackupPasswordDialog(
 }
 
 /**
- * Export step 0: choose which profiles the backup contains. All start UNTICKED (the user chooses
- * explicitly). Ticking the active profile or an unlocked one is immediate; ticking another
- * profile with a PIN prompts for it — wrong PIN shows "PIN incorrect" and leaves it unticked.
+ * Export step 0: choose which profiles the backup contains. Ticking the active profile or an
+ * unlocked one is immediate; ticking another profile with a PIN prompts for it — wrong PIN shows
+ * "PIN incorrect" and leaves it unticked.
+ *
+ * The ACTIVE profile starts ticked; every other profile still starts unticked and is the user's
+ * explicit choice. Starting with nothing ticked meant a user who ticked every *section* — the
+ * screen before this one, where everything is selected by default — could still walk away with a
+ * backup containing no profile data at all, which is not what "back up everything" looked like.
+ * The active profile needs no PIN to include, so pre-ticking it reveals nothing a locked profile
+ * was protecting.
  */
 @Composable
 private fun ProfilePickerDialog(
@@ -443,7 +454,9 @@ private fun ProfilePickerDialog(
     onDismiss: () -> Unit,
 ) {
     val colors = OwnTVTheme.colors
-    var ticked by remember { mutableStateOf<Set<Long>>(emptySet()) }
+    var ticked by remember(activeId) {
+        mutableStateOf(if (profiles.any { it.id == activeId }) setOf(activeId) else emptySet())
+    }
     var pinFor by remember { mutableStateOf<tv.own.owntv.core.database.entity.ProfileEntity?>(null) }
     val firstFocus = remember { FocusRequester() }
     LaunchedEffect(Unit) { runCatching { firstFocus.requestFocus() } }

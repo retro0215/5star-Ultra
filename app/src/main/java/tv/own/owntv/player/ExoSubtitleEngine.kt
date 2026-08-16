@@ -21,6 +21,7 @@ import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import tv.own.owntv.core.network.HttpClient
+import tv.own.owntv.core.drm.toMediaDrmConfiguration
 import tv.own.owntv.core.network.StreamHeaders
 import java.util.Locale
 
@@ -60,6 +61,9 @@ class ExoSubtitleEngine(
          *  this engine owns playback as a VOD engine (mpv never probed the file, so its list is empty). */
         fun onTextTracks(tracks: List<TrackOption>)
         fun onVideoFps(fps: Float)
+        /** This file declares no video track at all (music-only VOD). The HUD says so on screen — sound
+         *  over black is otherwise indistinguishable from a broken player. */
+        fun onAudioOnlyMedia(audioOnly: Boolean) {}
         fun onError(failure: PlaybackFailure)
         /** Playback reached the end of the file (drives VOD auto-play-next while this engine is active). */
         fun onEnded()
@@ -99,7 +103,8 @@ class ExoSubtitleEngine(
     private var shiftJob: kotlinx.coroutines.Job? = null
 
     private fun shiftKey(path: String, offsetMs: Int) = "$path|$offsetMs"
-    // Engine-fallback playback (mpv terminally failed this VOD): no auto subtitle, engine-worded errors.
+    // Engine-fallback playback (mpv terminally failed this VOD): no arbitrary subtitle; a configured
+    // preferred language is still honoured. Errors remain engine-worded.
     private var fallbackMode = false
     // First-frame watchdog: this handoff only exists to show an image subtitle over otherwise-healthy
     // video, so if ExoPlayer never renders a frame (a format/decoder combo mpv handled fine but this
@@ -339,6 +344,9 @@ class ExoSubtitleEngine(
 
     private fun buildMediaItem(url: String): MediaItem {
         val builder = MediaItem.Builder().setUri(url)
+        // #115 — a protected item. Single-session: a film's content key does not rotate, unlike a live
+        // channel's, so there is nothing to renew mid-playback.
+        drmConfig?.let { builder.setDrmConfiguration(it.toMediaDrmConfiguration(multiSession = false)) }
         if (externalSubs.isNotEmpty()) {
             builder.setSubtitleConfigurations(externalSubs.map { s ->
                 // Timing offset for the active external sub: side-load a timestamp-shifted copy (§8).
@@ -461,6 +469,9 @@ class ExoSubtitleEngine(
      *  fail the moment the engine fallback took over. */
     @Volatile var userAgent: String? = null
     @Volatile var httpHeaders: Map<String, String> = emptyMap()
+    /** This item's Widevine/ClearKey licence details (#115), pushed in by [OwnTVPlayer]; null for the
+     *  unprotected majority. Only this engine can honour it — mpv has no CDM to license the stream. */
+    @Volatile var drmConfig: tv.own.owntv.core.drm.DrmConfig? = null
     private var httpFactory: OkHttpDataSource.Factory? = null
 
     private fun applyRequestHeaders() {
@@ -709,6 +720,8 @@ class ExoSubtitleEngine(
         if (tracks.groups.isEmpty()) return // nothing known yet — keep the watchdog armed
         val hasVideo = tracks.groups.any { it.type == C.TRACK_TYPE_VIDEO }
         hasVideoTrack = hasVideo
+        // Audio Mode disables the video track deliberately; that must not read as "this file has no video".
+        callbacks.onAudioOnlyMedia(!hasVideo && !audioOnly)
         if (!hasVideo) {
             android.util.Log.i(TAG, "no video track in this file — audio-only, no-video watchdog disarmed")
             mainHandler.removeCallbacks(noVideoTimeout)
@@ -799,15 +812,6 @@ class ExoSubtitleEngine(
             }
             return // its track hasn't appeared in this update yet — wait for the next onTracksChanged
         }
-        // Engine-fallback playback with no subtitle picked: keep text tracks OFF rather than letting the
-        // "?: textTracks.first()" recovery below auto-select one the user never asked for.
-        if (pendingSubTypeIndex < 0 && pendingSubLang == null) {
-            p.trackSelectionParameters = p.trackSelectionParameters.buildUpon()
-                .setTrackTypeDisabled(C.TRACK_TYPE_TEXT, true)
-                .build()
-            subtitleApplied = true
-            return
-        }
         // Flatten text tracks in declaration order so the mpv sub ordinal lines up with ExoPlayer's.
         data class TextTrack(val group: TrackGroup, val index: Int, val lang: String?)
         val textTracks = ArrayList<TextTrack>()
@@ -818,9 +822,42 @@ class ExoSubtitleEngine(
             }
         }
         if (textTracks.isEmpty()) return
+        // A fresh item has no manual carry-over. Honour the configured language explicitly:
+        // this handoff path used to disable the text renderer after Media3 selected it.
+        // Blank preference or no matching track leaves subtitles off rather than choosing randomly.
+        if (pendingSubTypeIndex < 0 && pendingSubLang == null) {
+            val preferred = prefSubLang.takeIf { it.isNotBlank() }?.let { wanted ->
+                textTracks.firstOrNull { subtitleLanguageMatches(wanted, it.lang) }
+            }
+            val builder = p.trackSelectionParameters.buildUpon()
+            if (preferred == null) {
+                builder.setTrackTypeDisabled(C.TRACK_TYPE_TEXT, true)
+            } else {
+                builder
+                    .setOverrideForType(TrackSelectionOverride(preferred.group, listOf(preferred.index)))
+                    .setTrackTypeDisabled(C.TRACK_TYPE_TEXT, false)
+            }
+            p.trackSelectionParameters = builder.build()
+            subtitleApplied = true
+            return
+        }
+        // The ordinal is a cross-engine guess — mpv's track order need not survive into ExoPlayer's — so
+        // it only stands when the track it lands on also carries the language the user picked. Failing
+        // that, match by language; and force a track only when there is exactly one it could be. The old
+        // blind ".first()" tail handed the user an arbitrary subtitle in a language they never asked for,
+        // with nothing on screen to say so.
         val target = textTracks.getOrNull(pendingSubTypeIndex)
+            ?.takeIf { pendingSubLang == null || it.lang.equals(pendingSubLang, ignoreCase = true) }
             ?: pendingSubLang?.let { lang -> textTracks.firstOrNull { it.lang.equals(lang, ignoreCase = true) } }
-            ?: textTracks.first()
+            ?: textTracks.singleOrNull()
+        if (target == null) {
+            android.util.Log.w(TAG, "no text track matches the picked subtitle (index=$pendingSubTypeIndex lang=$pendingSubLang) — leaving subtitles off")
+            p.trackSelectionParameters = p.trackSelectionParameters.buildUpon()
+                .setTrackTypeDisabled(C.TRACK_TYPE_TEXT, true)
+                .build()
+            subtitleApplied = true
+            return
+        }
         p.trackSelectionParameters = p.trackSelectionParameters.buildUpon()
             .setOverrideForType(TrackSelectionOverride(target.group, listOf(target.index)))
             .setTrackTypeDisabled(C.TRACK_TYPE_TEXT, false)

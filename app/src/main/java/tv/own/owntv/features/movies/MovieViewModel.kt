@@ -262,7 +262,10 @@ class MovieViewModel(
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
     val selectedMovieMeta: StateFlow<MovieMeta?> = combine(_selectedMovie, _metaRefreshTick) { m, tick -> m to tick }
         .distinctUntilChanged { a, b -> a.first?.id == b.first?.id && a.second == b.second }
-        .debounce(350)
+        // 700 ms, not 350: sustained D-pad scrolling was firing a lookup per card it passed over, which
+        // made browsing the single biggest source of metadata traffic. At 700 ms a scroll produces one
+        // lookup when the user actually settles on something.
+        .debounce(tv.own.owntv.core.metadata.MetadataRepository.FOCUS_DEBOUNCE_MS)
         .mapLatest { (m, _) ->
             if (m == null) null
             else MovieMeta(m.id, runCatching { metadata.resolveMovie(m) }.getOrNull())
@@ -281,12 +284,35 @@ class MovieViewModel(
     private val _playingMovie = MutableStateFlow<MovieEntity?>(null)
     val playingMovie: StateFlow<MovieEntity?> = _playingMovie.asStateFlow()
 
+    /**
+     * What we handed the player, pinned at [play] time — the only thing a resume position may be
+     * written against.
+     *
+     * Progress used to be matched by comparing the player's current URL against the movie's stored
+     * `streamUrl`, and the profile was read at save time. Both were wrong: a Stalker playback URL is
+     * minted per play and never equals the stored cmd, so those movies never saved a position at all;
+     * and switching profile mid-film wrote the position into the *new* profile's Continue Watching.
+     */
+    private data class PlayingRef(val movie: MovieEntity, val profileId: Long, val contentKey: String?)
+
+    private var playingRef: PlayingRef? = null
+
     init {
-        // Periodically persist resume position for the movie currently playing.
+        // Periodically persist resume position for the movie currently playing. This is the crash
+        // backstop; the real saves happen on pause (below) and on leaving the player.
         viewModelScope.launch {
             while (isActive) {
                 delay(10_000)
                 saveProgressNow()
+            }
+        }
+        // Save on pause too — otherwise pausing and walking away loses up to 10s, and everything
+        // since the last tick if the app is killed while paused.
+        viewModelScope.launch {
+            var wasPlaying = false
+            player.isPlaying.collect { playing ->
+                if (wasPlaying && !playing) saveProgressNow()
+                wasPlaying = playing
             }
         }
     }
@@ -464,7 +490,10 @@ class MovieViewModel(
             // in-app engine entirely. History is still recorded (recently-watched); resume position
             // and the playing-movie HUD/progress tick are intentionally not — the external app owns
             // playback and OwnTV can't observe it.
-            if (settings.externalPlayerMovies.first()) {
+            // #115 — a protected item cannot go to an external player: no standard intent extra
+            // carries a licence URL, so the other app would open it and fail on the first segment.
+            // Play it here instead, where the licence request can actually be made.
+            if (settings.externalPlayerMovies.first() && movie.drmConfig == null) {
                 Log.d(TAG, "play movieId=${movie.id} -> external player")
                 val url = resolvedUrlOrNull(movie) ?: return@launch
                 externalPlayerLauncher.launch(
@@ -495,6 +524,7 @@ class MovieViewModel(
                 movie.streamUrl
             }
             Log.d(TAG, "play movieId=${movie.id} profile=$pid startPositionMs=$startPositionMs")
+            val pinKey = tv.own.owntv.core.player.enginePinKey(movie.sourceId, "MOVIE", movie.remoteId)
             player.play(
                 playUrl,
                 title = movie.name,
@@ -503,8 +533,9 @@ class MovieViewModel(
                 startPositionMs = startPositionMs,
                 userAgent = sourceUa,
                 httpHeaders = movie.httpHeaders,
+                drmConfig = movie.drmConfig,
                 // P6 — engine pins key on this, not on playUrl (a Stalker playUrl is minted per play).
-                contentKey = tv.own.owntv.core.player.enginePinKey(movie.sourceId, "MOVIE", movie.remoteId),
+                contentKey = pinKey,
                 // F12 — a Stalker create_link URL dies before a long film ends; give the player a way to
                 // mint a fresh one instead of retrying the expired link. Null for M3U/Xtream, which also
                 // clears any provider the previous item left on the player.
@@ -517,6 +548,7 @@ class MovieViewModel(
                 } else null,
             )
             _playingMovie.value = movie
+            playingRef = pid?.let { PlayingRef(movie, it, pinKey) }
             // Enable the player's OpenSubtitles search for this movie (subtitle plan §4). tmdbId is
             // resolved from the metadata cache when available (review R7) for a stronger match.
             if (pid != null) {
@@ -608,15 +640,28 @@ class MovieViewModel(
         }
     }
 
-    /** Persist the resume position if the player is actually playing the tracked movie. */
+    /**
+     * True while the player still holds the movie [ref] was pinned for. Matches on the stable engine
+     * pin key; rows with no `remoteId` have no such key and fall back to the stream URL, which for
+     * those rows is exactly as stable as it always was (see `enginePinKey`).
+     */
+    private fun playerIsOn(ref: PlayingRef): Boolean =
+        if (ref.contentKey != null) player.currentMediaContentKey == ref.contentKey
+        else player.currentMediaUrl != null && player.currentMediaUrl == ref.movie.streamUrl
+
+    /** Persist the resume position if the player is still on the movie we started. */
     fun saveProgressNow() {
-        val m = _playingMovie.value ?: return
-        if (player.currentMediaUrl != m.streamUrl || !player.isPlaying.value) return
+        val ref = playingRef ?: return
+        val m = ref.movie
+        if (player.isLiveContent || !playerIsOn(ref)) return
         val pos = player.position.value
         val dur = player.duration.value
         if (pos > 0 && dur > 0) {
             viewModelScope.launch {
+                // The position belongs to the profile that started playback. If the user switched
+                // profiles mid-film, drop it rather than writing it into the new profile's list.
                 val pid = currentProfileId() ?: return@launch
+                if (pid != ref.profileId) return@launch
                 Log.d(TAG, "saveProgressNow movieId=${m.id} profile=$pid positionMs=$pos durationMs=$dur")
                 runCatching {
                     progressDao.save(
@@ -653,9 +698,15 @@ class MovieViewModel(
             val idx = items.indexOfFirst { it.id == movie.id }
             if (idx < 0) return@launch
             _moveState.value = MovieMoveState(items, idx, contextKey)
+            // Manual order is only visible in playlist order, so Move switches the list to it — but that
+            // is a means, not a choice the user made. Remember what they had so Cancel can put it back.
+            sortBeforeMove = sortMode.value
             settings.setSortMovies(SettingsRepository.SortMode.PLAYLIST)
         }
     }
+
+    /** The sort the user was on before [enterMoveMode] switched the list to playlist order. */
+    private var sortBeforeMove: SettingsRepository.SortMode? = null
 
     fun moveUp() {
         val s = _moveState.value ?: return
@@ -678,6 +729,7 @@ class MovieViewModel(
     fun commitMove() {
         val s = _moveState.value ?: return
         _moveState.value = null
+        sortBeforeMove = null // the new order IS playlist order — staying on it is the point
         viewModelScope.launch {
             val pid = currentProfileId() ?: return@launch
             contentOrderDao.replaceContext(
@@ -691,7 +743,15 @@ class MovieViewModel(
         }
     }
 
-    fun cancelMove() { _moveState.value = null }
+    fun cancelMove() {
+        _moveState.value = null
+        // Cancel means nothing changed — including the sort Move switched away from.
+        val previous = sortBeforeMove ?: return
+        sortBeforeMove = null
+        if (previous != SettingsRepository.SortMode.PLAYLIST) {
+            viewModelScope.launch { settings.setSortMovies(previous) }
+        }
+    }
 
     /** Hide the movie from all lists (undo via Settings → Customize Category → Hidden items). */
     fun hideMovie(movie: MovieEntity) {
@@ -717,7 +777,9 @@ class MovieViewModel(
         val rating = sort == SettingsRepository.SortMode.RATING
         val dateAdded = sort == SettingsRepository.SortMode.DATE_ADDED
         return if (query.isBlank()) when (key) {
-            LiveKey.All -> when {
+            // Catch-up is a Live TV-only rail (channels have archives, movies don't), but the rail model
+            // is shared across all three sections — so it degrades to All here rather than existing.
+            LiveKey.All, LiveKey.Catchup -> when {
                 rating -> movieDao.pagingAllRating(ids)
                 playlist -> movieDao.pagingAllOriginal(ids)
                 dateAdded -> movieDao.pagingAllDateAdded(ids)
@@ -738,7 +800,7 @@ class MovieViewModel(
                 }
             }
         } else when (key) {
-            LiveKey.All ->
+            LiveKey.All, LiveKey.Catchup ->
                 if (dateAdded) movieDao.searchAllDateAdded(query, ids)
                 else movieDao.searchAll(query, ids)
             LiveKey.Favorites -> movieDao.searchFavorites(query, c.profileId, ids)
@@ -753,7 +815,7 @@ class MovieViewModel(
     private fun countFlow(key: LiveKey, c: Ctx, hiddenCats: Set<Long>): Flow<Int> {
         val ids = c.sourceIds.ifEmpty { listOf(-1L) }
         return when (key) {
-            LiveKey.All ->
+            LiveKey.All, LiveKey.Catchup ->
                 if (hiddenCats.isEmpty()) movieDao.countAll(ids)
                 else movieDao.countAllExcluding(ids, hiddenCats.toList())
             LiveKey.Favorites -> movieDao.countFavorites(c.profileId, ids)

@@ -116,4 +116,31 @@ interface SubtitleDao {
     /** cacheIds linked to a media type — used to delete their files before clearing the rows. */
     @Query("SELECT DISTINCT cacheId FROM subtitle_link WHERE profileId = :profileId AND mediaType = :mediaType")
     suspend fun cacheIdsForType(profileId: Long, mediaType: String): List<Long>
+
+    /** Drop only this profile's links of ONE media type. "Delete all movie subtitles" must not take a
+     *  file's series links with it — the same cached file can be linked to both. */
+    @Query("DELETE FROM subtitle_link WHERE profileId = :profileId AND cacheId = :cacheId AND mediaType = :mediaType")
+    suspend fun deleteLinksForProfileAndType(profileId: Long, cacheId: Long, mediaType: String)
+
+    /** This profile's remaining links to a cached file, across every media type. */
+    @Query("SELECT COUNT(*) FROM subtitle_link WHERE cacheId = :cacheId AND profileId = :profileId")
+    suspend fun linkCountForCache(cacheId: Long, profileId: Long): Int
+
+    // --- backup & restore (BackupManager) ---
+    //
+    // Whole-table reads, used only when writing a backup file. They are deliberately unfiltered: the
+    // manager scopes rows to the ticked profiles and their sources, because it is the only place that
+    // knows which those are.
+
+    @Query("SELECT * FROM subtitle_cache")
+    suspend fun allCacheOnce(): List<SubtitleCacheEntity>
+
+    @Query("SELECT * FROM subtitle_selection")
+    suspend fun allSelectionsOnce(): List<SubtitleSelectionEntity>
+
+    @Query("SELECT * FROM subtitle_timing")
+    suspend fun allTimingsOnce(): List<SubtitleTimingEntity>
+
+    @Query("SELECT * FROM subtitle_link")
+    suspend fun allLinksOnce(): List<SubtitleLinkEntity>
 }

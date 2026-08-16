@@ -94,12 +94,25 @@
     <string name="settings_metadata_provider_tmdb_description">플레이리스트의 정보를 우선 사용하고 TMDB로 누락된 정보를 보완하며 출연진, 장르 및 배경 이미지를 추가합니다.</string>
     <string name="settings_metadata_tmdb_only_description">모든 필드에서 TMDB를 우선 사용하며 TMDB에 정보가 없을 때만 플레이리스트를 사용합니다.</string>
     <string name="settings_selected">선택됨</string>
-    <string name="settings_active_tmdb_source">활성 TMDB 소스: <xliff:g id="tier">%1$s</xliff:g></string>
+    <string name="settings_metadata_allowance">일일 사용량</string>
+    <string name="settings_metadata_usage_label">사용량</string>
+    <string name="settings_metadata_usage_value"><xliff:g id="min_used">%1$d</xliff:g>/<xliff:g id="min_total">%2$d</xliff:g> 분 · <xliff:g id="hr_used">%3$d</xliff:g>/<xliff:g id="hr_total">%4$d</xliff:g> 시간 · <xliff:g id="day_used">%5$d</xliff:g>/<xliff:g id="day_total">%6$d</xliff:g> 일</string>
+    <string name="settings_metadata_source_label">소스</string>
+    <string name="settings_metadata_key_label">키</string>
+    <string name="settings_metadata_server_label">서버</string>
+    <string name="settings_metadata_refills_label">충전 시각</string>
+    <string name="settings_metadata_clear_advanced_title">개인 키 사용을 중지할까요?</string>
+    <string name="settings_metadata_clear_advanced_message">TMDB API 키와 개인 서버 주소가 이 기기에서 삭제되고, OwnTV는 하루 사용량이 있는 내장 공유 서비스로 돌아갑니다.</string>
+    <string name="settings_metadata_fair_share">내장 메타데이터 서비스는 OwnTV를 사용하는 모든 사용자가 함께 쓰기 때문에 기기마다 하루 사용량이 정해져 있습니다. 사용량을 모두 쓰면 포스터와 설명은 충전될 때까지 일시 중지됩니다. 재생목록 자체의 정보는 평소대로 표시됩니다. 개인 TMDB API 키나 서버를 추가하면 이 제한이 사라집니다. 무료이며 개인 키에는 사실상 제한이 없습니다.</string>
+    <string name="settings_metadata_limit_reached">오늘의 메타데이터 사용량을 모두 사용했습니다. 설정 → 메타데이터에서 개인 TMDB 키를 추가하면 이 제한이 사라집니다.</string>
     <string name="settings_metadata_language">메타데이터 언어</string>
-    <string name="settings_metadata_language_description">TMDB에서 가져오는 줄거리, 장르 및 제목의 언어입니다. TMDB에서 번역하지 않은 필드는 영어로 유지됩니다. 이 설정을 변경하면 캐시된 상세 정보가 삭제되고 다시 가져옵니다.</string>
+    <string name="settings_metadata_language_description">TMDB에서 가져오는 줄거리, 장르, 제목의 언어입니다. TMDB가 번역하지 않은 항목은 영어로 표시됩니다. 세부 정보는 언어별로 캐시되므로 되돌리면 바로 표시됩니다.</string>
     <string name="settings_advanced_options">고급 옵션</string>
     <string name="settings_advanced_metadata_description">공유 기본값 대신 자체 TMDB API 키 또는 직접 호스팅하는 서버를 사용합니다.</string>
     <string name="settings_metadata_server_description">기본 제공 공유 서버를 사용하려면 두 항목을 모두 비워 두세요(별도 설정 불필요). TMDB를 직접 호출하려면 자체 TMDB API 키를 입력하고, 자체 프록시/미러를 사용하려면 직접 호스팅하는 서버 URL을 입력하세요. URL이 키보다 우선합니다.</string>
+    <string name="settings_metadata_key_from_phone">휴대폰에서 키 가져오기</string>
+    <string name="settings_metadata_key_from_phone_desc">휴대폰으로 코드를 스캔하고 거기서 TMDB에 로그인한 뒤 키를 보내세요. 리모컨으로 입력할 것이 없습니다.</string>
+    <string name="settings_metadata_key_received">휴대폰에서 TMDB 키를 받았습니다</string>
     <string name="settings_tmdb_api_key">TMDB API 키(v3)</string>
     <string name="settings_self_host_url">자체 호스팅 서버 URL</string>
     <string name="settings_test">테스트</string>
@@ -350,11 +363,47 @@
     <string name="settings_decoding">디코딩</string>
     <string name="settings_hardware_decoding">하드웨어 디코딩</string>
     <string name="settings_hardware_decoding_description">TV의 하드웨어 디코더를 사용합니다. 일부 스트림이 끊기거나 화면에 이상이 나타나면 끄세요.</string>
+    <!-- Translators: Setting label for deinterlacing of interlaced broadcast video. -->
+    <string name="settings_deinterlace">디인터레이스</string>
+    <!-- Translators: Description of the deinterlacing setting. -->
+    <string name="settings_deinterlace_description">일부 오래된 SD 채널에서 움직일 때 나타나는 빗살 같은 줄을 부드럽게 합니다. mpv가 직접 화면을 그릴 때 적용되므로 차이가 없으면 하드웨어 디코딩을 꺼 보세요.</string>
     <string name="settings_movies_series_player">영화 및 시리즈 플레이어</string>
+    <string name="settings_live_tv_player">실시간 TV 플레이어</string>
+    <string name="settings_engine_order"><xliff:g id="first">%1$s</xliff:g> 다음 <xliff:g id="second">%2$s</xliff:g></string>
+    <string name="settings_engine_only"><xliff:g id="engine">%1$s</xliff:g>만</string>
+    <string name="settings_engine_default"><xliff:g id="option">%1$s</xliff:g>(기본값)</string>
     <string name="settings_reset_player_choices">저장된 플레이어 선택 초기화</string>
     <string name="settings_external_player">외부 플레이어</string>
     <string name="settings_default_zoom">기본 화면 확대</string>
     <string name="settings_default_zoom_description">재생이 시작될 때 적용할 화면 비율/확대 방식입니다.</string>
+    <!-- Translators: Setting label for the volume level playback starts at. -->
+    <string name="settings_default_volume">기본 음량</string>
+    <!-- Translators: Description of the default volume setting. -->
+    <string name="settings_default_volume_description">재생이 시작될 때 적용할 음량입니다. 100%%를 넘으면 소리가 작은 스트림이 증폭됩니다.</string>
+    <!-- Translators: Settings-row title for forgetting the zoom saved for individual items. -->
+    <string name="settings_reset_saved_zoom">저장된 화면 확대 초기화</string>
+    <!-- Translators: Description of the reset-saved-zoom setting row. -->
+    <string name="settings_reset_saved_zoom_description">플레이어에서 화면 확대를 바꾸면 해당 채널, 영화 또는 에피소드에 저장됩니다. 초기화하면 모두 다시 기본 화면 확대를 따릅니다.</string>
+    <!-- Translators: Confirmation dialog title before forgetting the saved per-item zoom. -->
+    <string name="settings_reset_saved_zoom_confirm">저장된 화면 확대를 초기화할까요?</string>
+    <!-- Translators: Confirmation dialog body before forgetting the saved per-item zoom. -->
+    <string name="settings_reset_saved_zoom_confirm_description">모든 채널, 영화, 에피소드가 기본 화면 확대로 돌아갑니다. 저장된 음량은 유지됩니다. 개별 항목은 언제든지 플레이어에서 다시 설정할 수 있습니다.</string>
+    <!-- Translators: Settings-row title for forgetting the volume saved for individual items. -->
+    <string name="settings_reset_saved_volume">저장된 음량 초기화</string>
+    <!-- Translators: Description of the reset-saved-volume setting row. -->
+    <string name="settings_reset_saved_volume_description">플레이어에서 음량을 바꾸면 해당 채널, 영화 또는 에피소드에 저장됩니다. 초기화하면 모두 다시 기본 음량을 따릅니다.</string>
+    <!-- Translators: Confirmation dialog title before forgetting the saved per-item volume. -->
+    <string name="settings_reset_saved_volume_confirm">저장된 음량을 초기화할까요?</string>
+    <!-- Translators: Confirmation dialog body before forgetting the saved per-item volume. -->
+    <string name="settings_reset_saved_volume_confirm_description">모든 채널, 영화, 에피소드가 기본 음량으로 돌아갑니다. 저장된 화면 확대 설정은 유지됩니다. 개별 항목은 언제든지 플레이어에서 다시 설정할 수 있습니다.</string>
+    <!-- Translators: Setting label for how far rewind/forward jumps in a movie or episode. -->
+    <string name="settings_seek_step">탐색 간격</string>
+    <!-- Translators: Description of the seek step setting. -->
+    <string name="settings_seek_step_description">영화나 에피소드에서 되감기와 빨리 감기가 이동하는 거리입니다.</string>
+    <!-- Translators: Setting label for how far rewind/forward jumps inside a live channel's archive. -->
+    <string name="settings_live_rewind_step">라이브 되감기 간격</string>
+    <!-- Translators: Description of the live rewind step setting. -->
+    <string name="settings_live_rewind_step_description">라이브 채널의 다시보기 보관분에서 되감기와 빨리 감기가 이동하는 거리입니다.</string>
     <string name="settings_resume_playback">이어서 재생</string>
     <string name="settings_resume_playback_description">영화 또는 에피소드에 저장된 재생 위치가 있을 때 수행할 작업입니다.</string>
     <string name="settings_subtitles">자막</string>
@@ -369,7 +418,7 @@
     <string name="settings_audio">오디오</string>
     <string name="settings_preferred_audio_language">선호 오디오 언어</string>
     <string name="settings_audio_sync">오디오 동기화</string>
-    <string name="settings_audio_sync_description">영상에 맞도록 오디오를 앞이나 뒤로 이동합니다.</string>
+    <string name="settings_audio_sync_description">영상에 맞도록 오디오를 앞이나 뒤로 이동합니다. mpv 엔진에만 적용됩니다.</string>
     <string name="settings_live_tv">실시간 TV</string>
     <string name="settings_live_latency_description">실시간 방송과 얼마나 가깝게 재생할지 설정합니다. 낮을수록 실시간에 가까워지지만 버퍼가 작아지므로 불안정한 스트림에서는 끊김이나 재연결이 더 자주 발생할 수 있습니다. 다음에 여는 채널부터 적용됩니다.</string>
     <string name="settings_channel_numbers">채널 번호</string>
@@ -397,7 +446,8 @@
     <string name="settings_audio_delay"><xliff:g id="delay">%1$d</xliff:g> ms</string>
     <string name="settings_external_player_description">외부 앱에서 열 섹션을 선택합니다.</string>
     <string name="settings_audio_delay_value"><xliff:g id="delay">%1$d</xliff:g> ms</string>
-    <string name="settings_movies_player_description">mpv(권장)는 DTS/TrueHD 오디오와 특수한 파일을 비롯해 가장 다양한 형식을 지원하며 A/V 동기화 보정 기능도 제공합니다. 영화나 에피소드가 시작되지 않을 때만 ExoPlayer로 전환하세요. 일부 TV에서는 mpv로 재생할 수 없는 스트림을 재생하지만 DTS/TrueHD 오디오를 디코딩할 수 없고 A/V 동기화 보정 기능도 없습니다. 어느 쪽을 선택하든 실패하면 다른 플레이어가 자동으로 시도됩니다.</string>
+    <string name="settings_movies_player_description">mpv(권장)는 DTS/TrueHD 오디오와 특이한 파일 등 가장 폭넓은 형식을 지원하고 A/V 싱크 보정도 제공합니다. ExoPlayer는 일부 TV에서 mpv가 열지 못하는 스트림을 재생하지만 DTS/TrueHD 오디오를 디코딩하지 못하고 A/V 싱크 보정도 없습니다. 조합 옵션은 첫 번째 플레이어가 실패하면 다른 플레이어를 자동으로 시도하고, 단일 플레이어 옵션은 절대 시도하지 않습니다. 두 번째 플레이어가 TV에서 어차피 작동하지 않는다면 몇 초의 검은 화면을 줄일 수 있습니다.</string>
+    <string name="settings_live_player_description">ExoPlayer(권장)는 채널을 훨씬 빠르게 열며 실시간 자막을 지원하는 유일한 플레이어입니다. mpv는 ExoPlayer가 재생하지 못하는 채널도 재생하며, 여기에는 특이한 오디오를 쓰는 채널도 포함됩니다. 조합 옵션은 첫 번째 플레이어가 실패하면 다른 플레이어를 자동으로 시도하고, 단일 플레이어 옵션은 절대 시도하지 않습니다. 두 번째 플레이어가 TV에서 어차피 작동하지 않는다면 몇 초의 검은 화면을 줄일 수 있습니다. 플레이어에서 직접 전환한 채널은 어느 쪽이든 선택이 유지됩니다.</string>
     <string name="settings_reset_player_choices_description">플레이어에서 개별 영화나 에피소드를 mpv와 ExoPlayer 간에 전환하면 그 선택이 다음을 위해 저장됩니다. 초기화하면 모두 다시 위 설정을 따릅니다. 라이브 채널의 저장된 선택은 유지됩니다.</string>
     <string name="settings_reset_player_choices_none">저장된 항목 없음</string>
     <plurals name="settings_reset_player_choices_count">
@@ -629,7 +679,7 @@
     <string name="settings_backup_what_backup">백업할 항목</string>
     <string name="settings_backup_what_restore">복원할 항목</string>
     <string name="settings_backup_encrypt_title">이 백업을 암호화하시겠습니까?</string>
-    <string name="settings_backup_encrypt_message">백업 암호를 사용하면 플레이리스트, 프로필 및 저장된 암호를 포함한 전체 파일이 암호화되며 해당 암호 없이는 어떤 내용도 읽을 수 없습니다. 암호를 안전하게 보관하세요. 암호를 분실하면 백업을 전혀 열 수 없습니다. 암호를 사용하지 않으면 파일이 암호화되지 않고 저장된 암호도 포함되지 않습니다.</string>
+    <string name="settings_backup_encrypt_message">백업 암호를 사용하면 플레이리스트, 프로필 및 저장된 암호를 포함한 전체 파일이 암호화되며 해당 암호 없이는 어떤 내용도 읽을 수 없습니다. 암호를 안전하게 보관하세요. 암호를 분실하면 백업을 전혀 열 수 없습니다. 암호를 사용하지 않으면 파일이 암호화되지 않고 저장된 암호와 PIN도 포함되지 않습니다.</string>
     <string name="settings_backup_export_title">백업 내보내기</string>
     <string name="settings_backup_export_message">동일한 Wi-Fi에 연결된 다른 기기(휴대전화 또는 노트북)로 백업을 보내거나 이 기기에 파일로 저장합니다.</string>
     <string name="settings_backup_restore_title">백업 복원</string>
@@ -678,12 +728,12 @@
     <string name="settings_backup_section_settings">앱 설정</string>
     <string name="settings_backup_section_settings_desc">테마, 강조 색상, 플레이어 및 레이아웃 환경설정</string>
     <string name="settings_backup_saved_to"><xliff:g id="path">%1$s</xliff:g>에 저장되었습니다.</string>
-    <string name="settings_backup_saved_to_without_passwords"><xliff:g id="path">%1$s</xliff:g>에 저장되었습니다. 암호는 포함되지 않았습니다.</string>
+    <string name="settings_backup_saved_to_without_passwords"><xliff:g id="path">%1$s</xliff:g>에 저장되었습니다. 암호와 PIN은 포함되지 않았습니다.</string>
     <plurals name="settings_backup_restored">
         <item quantity="other"><xliff:g id="items">%1$d</xliff:g>개 항목을 복원했습니다.</item>
     </plurals>
     <string name="settings_backup_restore_resync">콘텐츠를 불러오려면 소스를 다시 동기화하세요.</string>
-    <string name="settings_backup_restore_password_note">소스/프록시에서 저장된 암호를 다시 입력하세요.</string>
+    <string name="settings_backup_restore_password_note">소스/프록시에서 저장된 암호와 프로필 PIN을 다시 입력하세요.</string>
     <plurals name="settings_backup_skipped_sources">
         <item quantity="other">플레이리스트 유형이 지원되지 않아 <xliff:g id="count">%1$d</xliff:g>개 소스를 건너뛰었습니다.</item>
     </plurals>
@@ -892,6 +942,8 @@
     <string name="settings_font_preview">엔터테인먼트를 더 간단하게.</string>
     <string name="settings_search_keywords_fonts">글꼴 텍스트 크기 서체 팝업 읽기 접근성</string>
     <string name="settings_font_system_sans">시스템 산세리프</string>
+    <string name="settings_font_monospace">고정폭</string>
+    <string name="settings_subtitle_font">자막 글꼴</string>
     <string name="settings_glass_preset_title">모양 프리셋</string>
     <string name="settings_glass_preset_clear">투명</string>
     <string name="settings_glass_preset_balanced">균형</string>

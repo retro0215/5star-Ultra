@@ -284,7 +284,10 @@ class SearchViewModel(
                 movie.streamUrl
             }
             // Global external-player toggle: same chokepoint behavior as MovieViewModel.play().
-            if (settings.externalPlayerMovies.first()) {
+            // #115 — a protected item cannot go to an external player: no standard intent extra
+            // carries a licence URL, so the other app would open it and fail on the first segment.
+            // Play it here instead, where the licence request can actually be made.
+            if (settings.externalPlayerMovies.first() && movie.drmConfig == null) {
                 externalPlayerLauncher.launch(
                     url = url,
                     title = movie.name,
@@ -297,6 +300,7 @@ class SearchViewModel(
                 url, title = movie.name, year = movie.year?.toString(), isLive = false,
                 userAgent = source?.userAgent,
                 httpHeaders = movie.httpHeaders,
+                drmConfig = movie.drmConfig,
                 // P6 — same stable engine-pin identity MovieViewModel uses, so a pin made in one
                 // screen applies in the other.
                 contentKey = tv.own.owntv.core.player.enginePinKey(movie.sourceId, "MOVIE", movie.remoteId),

@@ -87,14 +87,30 @@ data class ChannelEntity(
      *  [tv.own.owntv.core.network.StreamHeaders]. Set from the M3U's `#EXTVLCOPT` / `#EXTHTTP` /
      *  `#KODIPROP` directives or a `url|Key=Value` suffix; null for providers that carry none (F16). */
     val httpHeaders: String? = null,
+    /** Widevine/ClearKey licence details — see [tv.own.owntv.core.drm.DrmConfig] (v33, #115). Non-null
+     *  makes this channel ExoPlayer-only: mpv/FFmpeg can decrypt CENC given a raw key
+     *  (`--demuxer-lavf-o=decryption_key=…`) but has no CDM, so it cannot FETCH one from a licence
+     *  server — which is the only thing a `license_key` URL offers. The ladder must not offer mpv. */
+    val drmConfig: String? = null,
     @ColumnInfo(defaultValue = "0") val contentHash: Int = 0,
 )
 
-/** Returns the stream URL to tune, swapping .ts to .m3u8 if preferHls & hlsSupported are active for Xtream. */
+/**
+ * The stream URL to tune: the channel's own `.ts`, swapped to `.m3u8` when the playlist's "Prefer HLS"
+ * is on for an Xtream source.
+ *
+ * **Deliberately NOT gated on `hlsSupported`** — this KDoc used to claim it was, and two earlier audits
+ * recommended adding that gate on the strength of the comment. It would be wrong. Panels lie about
+ * `allowed_output_formats`: gating here breaks HLS for every user on an under-reporting panel, and for
+ * every source that has not finished syncing yet. The authoritative note is on the field itself in
+ * `ProfileEntities.kt`. A channel whose `.m3u8` genuinely doesn't work is handled after the fact, per
+ * channel and per engine, by `LiveStreamQuirks.rememberNoHlsVariant`.
+ */
 fun ChannelEntity.playStreamUrl(source: SourceEntity?): String =
     resolveStreamUrl(streamUrl, source)
 
-/** Swaps .ts to .m3u8 if preferHls is active for an Xtream source. */
+/** Swaps .ts to .m3u8 if preferHls is active for an Xtream source. See [playStreamUrl] for why this is
+ *  not gated on `hlsSupported`. */
 fun resolveStreamUrl(url: String, source: SourceEntity?): String {
     if (source != null && source.type == tv.own.owntv.core.model.SourceType.XTREAM && source.preferHls) {
         if (url.endsWith(".ts", ignoreCase = true)) {
@@ -154,6 +170,8 @@ data class MovieEntity(
      *  movie entry carries the same `#EXTVLCOPT` / `#EXTHTTP` / `#KODIPROP` directives a channel does,
      *  and a restream that answers 403 without them does so for files exactly as for live (v28). */
     val httpHeaders: String? = null,
+    /** Widevine/ClearKey licence details — see [ChannelEntity.drmConfig] (v33). */
+    val drmConfig: String? = null,
     @ColumnInfo(defaultValue = "0") val contentHash: Int = 0,
     @ColumnInfo(defaultValue = "''") val canonicalTitle: String = "",
     @ColumnInfo(defaultValue = "''") val titleSignature: String = "",
@@ -262,6 +280,8 @@ data class EpisodeEntity(
     val remoteId: String? = null,
     /** Per-item HTTP request headers — see [MovieEntity.httpHeaders] (v28). */
     val httpHeaders: String? = null,
+    /** Widevine/ClearKey licence details — see [ChannelEntity.drmConfig] (v33). */
+    val drmConfig: String? = null,
 )
 
 /**
@@ -277,28 +297,32 @@ data class ContentHashProjection(
 )
 
 /**
- * The v26 fields ([ChannelEntity.catchupType] / [ChannelEntity.httpHeaders]) are folded in ONLY when
- * the channel actually carries one. Adding them unconditionally would change every stored hash at
- * once and turn the next resync of a 100k-channel playlist into a full rewrite for everybody; this way
- * only the (rare) channels that use them pay a single re-upsert, while a later change to a header or a
- * catch-up type still propagates.
+ * The v26 fields ([ChannelEntity.catchupType] / [ChannelEntity.httpHeaders]) and the v33
+ * [ChannelEntity.drmConfig] are folded in ONLY when the channel actually carries one. Adding them
+ * unconditionally would change every stored hash at once and turn the next resync of a 100k-channel
+ * playlist into a full rewrite for everybody; this way only the (rare) channels that use them pay a
+ * single re-upsert, while a later change to a header, a catch-up type or a licence URL still propagates.
  */
 fun ChannelEntity.computeContentHash(): Int {
     val base = Objects.hash(
         sourceId, categoryId, name, logoUrl, streamUrl,
         epgChannelId, number, remoteId, catchup, catchupDays, catchupSource,
     )
-    return if (catchupType == null && httpHeaders == null) base else Objects.hash(base, catchupType, httpHeaders)
+    if (catchupType == null && httpHeaders == null && drmConfig == null) return base
+    val withV26 = Objects.hash(base, catchupType, httpHeaders)
+    return if (drmConfig == null) withV26 else Objects.hash(withV26, drmConfig)
 }
 
-/** [httpHeaders] is folded in only when the movie actually carries headers — same reasoning as
- *  [ChannelEntity.computeContentHash]: no full-catalog rewrite for the 99% that don't. */
+/** [httpHeaders] and [MovieEntity.drmConfig] are folded in only when the movie actually carries them —
+ *  same reasoning as [ChannelEntity.computeContentHash]: no full-catalog rewrite for the 99% that don't. */
 fun MovieEntity.computeContentHash(): Int {
     val base = Objects.hash(
         sourceId, categoryId, name, posterUrl, backdropUrl,
         year, rating, durationSecs, plot, streamUrl, containerExt, remoteId, addedAt,
     )
-    return if (httpHeaders == null) base else Objects.hash(base, httpHeaders)
+    if (httpHeaders == null && drmConfig == null) return base
+    val withHeaders = Objects.hash(base, httpHeaders)
+    return if (drmConfig == null) withHeaders else Objects.hash(withHeaders, drmConfig)
 }
 
 fun SeriesEntity.computeContentHash(): Int = Objects.hash(

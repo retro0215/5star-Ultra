@@ -72,6 +72,7 @@ import tv.own.owntv.core.parser.XtEpgEntry
 import tv.own.owntv.core.parser.XtreamClient
 import tv.own.owntv.core.repository.activeProfileSources
 import tv.own.owntv.features.settings.data.SettingsRepository
+import tv.own.owntv.player.LiveLadder
 import tv.own.owntv.player.LiveStreamQuirks
 import tv.own.owntv.player.OwnTVPlayer
 import tv.own.owntv.ui.components.OwnTVIcon
@@ -80,6 +81,9 @@ import tv.own.owntv.ui.components.OwnTVIcon
 sealed interface LiveKey {
     data object Favorites : LiveKey
     data object History : LiveKey
+    /** Every channel the provider says keeps an archive. A filter over ALL, not a stored category —
+     *  and independent of the guide, so it works for users with no EPG. */
+    data object Catchup : LiveKey
     data object All : LiveKey
     data class Folder(val id: Long) : LiveKey
     /** A user-created combined category (issue #87); [id] is its "custom:<uuid>" customization key. */
@@ -91,6 +95,7 @@ sealed interface LiveKey {
 fun LiveKey.serialize(): String = when (this) {
     LiveKey.Favorites -> "FAV"
     LiveKey.History -> "HIST"
+    LiveKey.Catchup -> "CATCHUP"
     LiveKey.All -> "ALL"
     is LiveKey.Folder -> "FOLDER:$id"
     is LiveKey.Custom -> "CUSTOM:$id"
@@ -99,6 +104,7 @@ fun LiveKey.serialize(): String = when (this) {
 fun parseLiveKey(s: String): LiveKey? = when {
     s == "FAV" -> LiveKey.Favorites
     s == "HIST" -> LiveKey.History
+    s == "CATCHUP" -> LiveKey.Catchup
     s == "ALL" -> LiveKey.All
     s.startsWith("FOLDER:") -> s.removePrefix("FOLDER:").toLongOrNull()?.let { LiveKey.Folder(it) }
     s.startsWith("CUSTOM:") -> LiveKey.Custom(s.removePrefix("CUSTOM:"))
@@ -157,6 +163,16 @@ class LiveViewModel(
      *  [enginePinKey], with legacy stream-URL entries still honoured (P6). */
     val forceMpvUrls: StateFlow<Set<String>> = forceMpvStore.urls
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptySet())
+
+    /** Channels pinned the other way — to ExoPlayer — by the same toggle. Only reachable once the global
+     *  setting starts channels on mpv, which is why this list did not exist before it. */
+    private val forceExoUrls: StateFlow<Set<String>> = forceMpvStore.exoUrls
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptySet())
+
+    /** Live TV's global engine order. Eagerly collected for the same reason as the pins: the routing
+     *  decision in [playChannel] is synchronous and must never read a stale default. */
+    val liveEnginePreference: StateFlow<tv.own.owntv.player.EnginePreference> = settings.liveEnginePreference
+        .stateIn(viewModelScope, SharingStarted.Eagerly, tv.own.owntv.player.EnginePreference.EXO_FIRST)
 
     /** List ordering for this section (Playlist order vs A–Z), persisted in DataStore. */
     val sortMode: StateFlow<SettingsRepository.SortMode> = settings.sortLive
@@ -237,17 +253,49 @@ class LiveViewModel(
     private val _previewChannel = MutableStateFlow<ChannelEntity?>(null)
     val previewChannel: StateFlow<ChannelEntity?> = _previewChannel.asStateFlow()
 
-    private data class CachedEpg(val at: Long, val data: EpgNowNext)
-    private val epgCache = HashMap<Long, CachedEpg>()
+    /** Every guide read this screen makes, and the now/next cache that used to live here — see
+     *  [LiveEpgReader]. The shift it applies is passed in at each call, so this view model stays the
+     *  single place that knows a customization changed. */
+    private val epgReader = LiveEpgReader(epgDao, epgSourceStore, sourceDao, xtreamClient, streamUrlResolver)
+
+    /** Catch-up and live-rewind archive URL construction — see [LiveArchiveUrls]. */
+    private val archiveUrls = LiveArchiveUrls(sourceDao, xtreamClient, streamUrlResolver, settings)
 
     /** Bumped when a channel's EPG mapping changes so [nowNext] reloads for the same focused channel. */
     private val epgRefresh = MutableStateFlow(0)
+
+    // ---- "Watching" clock: the wall-clock instant actually on screen -------------------------------
+    // During archive playback the HUD clock alone is misleading — it reads 10:00 while the picture is
+    // yesterday at 13:00. This is that second time: the archive's own clock, advancing with playback.
+    // Null whenever the picture IS the present (live edge, or a movie/episode).
+    private val _watchingWallMs = MutableStateFlow<Long?>(null)
+    val watchingWallMs: StateFlow<Long?> = _watchingWallMs.asStateFlow()
+
 
     /** Now/next for the focused channel — fetched (debounced) from the Xtream `get_short_epg` API. */
     val nowNext: StateFlow<EpgNowNext?> = combine(_previewChannel, epgRefresh) { ch, tick -> ch to tick }
         .debounce(350)
         .distinctUntilChanged { a, b -> a.first?.id == b.first?.id && a.second == b.second }
-        .mapLatest { (ch, _) -> ch?.let { loadEpg(it) } }
+        .mapLatest { (ch, _) -> ch?.let { epgReader.nowNext(it, custom.value, epgOffset.value) } }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+    /**
+     * "PLAYING / THEN" — what was on air at the moment being replayed. Null unless an archive is on
+     * screen, so the HUD simply omits the card the rest of the time.
+     *
+     * Keyed on the watched instant rounded to the minute, not the raw value: [watchingWallMs] ticks
+     * every second, and the answer can only change when a programme boundary is crossed. Without that
+     * rounding this would hit the guide database once a second for the whole of a replay.
+     */
+    val archiveNowNext: StateFlow<EpgNowNext?> = combine(
+        _previewChannel,
+        _watchingWallMs.map { ms -> ms?.let { it / 60_000L } }.distinctUntilChanged(),
+        epgRefresh,
+    ) { ch, minute, _ -> Triple(ch, minute, Unit) }
+        .mapLatest { (ch, minute, _) ->
+            if (ch == null || minute == null) null
+            else epgReader.nowNextAt(ch, minute * 60_000L, custom.value, epgOffset.value)
+        }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     /**
@@ -270,7 +318,7 @@ class LiveViewModel(
     /** Global guide shift (minutes); a per-channel override in [custom] wins over it. Changing it
      *  drops the now/next cache so the details pane reflects the new offset straight away. */
     private val epgOffset: StateFlow<Int> = settings.epgOffsetMinutes
-        .onEach { epgCache.clear(); epgRefresh.value++ }
+        .onEach { epgReader.clearCache(); epgRefresh.value++ }
         .stateIn(viewModelScope, SharingStarted.Eagerly, 0)
 
     /** The user's custom combined categories with live member counts — the "Move to…" dialog's list. */
@@ -354,12 +402,19 @@ class LiveViewModel(
     val railItems: StateFlow<List<LiveRailItem>> = ctx
         .flatMapLatest { c ->
             if (c.profileId < 0) flowOf(defaultRail)
-            else combine(categoryDao.observe(c.sourceIds, MediaType.LIVE), custom, sortMode) { cats, cust, sort ->
+            else combine(
+                categoryDao.observe(c.sourceIds, MediaType.LIVE),
+                custom,
+                sortMode,
+                // Catch-up sits between History and All, but ONLY when the provider actually advertises
+                // an archive — otherwise every user without catch-up gets a folder that can never fill.
+                channelDao.observeCatchupCount(c.sourceIds.ifEmpty { listOf(-1L) }).distinctUntilChanged(),
+            ) { cats, cust, sort, catchupCount ->
                 // A–Z also sorts the category folders (custom categories included); manually moved
                 // categories stay pinned first. Custom categories ride the SAME customization keys,
                 // so renames/hides/reorders apply to them with no extra code (#87).
                 val folders = cats.applyCustomizationsWithCustoms(cust, cust.customCategories, alphaRest = sort == SettingsRepository.SortMode.ALPHA)
-                defaultRail + folders.map { e ->
+                railWithCatchup(catchupCount > 0) + folders.map { e ->
                     LiveRailItem(
                         key = e.categoryId?.let { LiveKey.Folder(it) } ?: LiveKey.Custom(e.customId!!),
                         title = e.displayName,
@@ -433,7 +488,7 @@ class LiveViewModel(
             // so the details pane reflects the new match immediately instead of after a restart.
             val id = epgChannelId?.trim()?.lowercase()?.takeIf { it.isNotEmpty() }
             if (id != null) runCatching { epgRepository.storeProgrammesForIdsFromCache(setOf(id)) }
-            epgCache.remove(channel.id)
+            epgReader.invalidate(channel.id)
             epgRefresh.value++
         }
     }
@@ -447,9 +502,9 @@ class LiveViewModel(
             val pid = currentProfileId() ?: return@launch
             val key = CustomizeKeys.channel(channel)
             customize.setEpgShift(pid, MediaType.LIVE, key, minutes)
-            // loadEpg reads the shift off `custom` — let the DataStore edit reach it before refreshing.
+            // The guide read takes the shift off `custom` — let the DataStore edit reach it before refreshing.
             kotlinx.coroutines.withTimeoutOrNull(1_000) { custom.first { it.epgShifts[key]?.toIntOrNull() == minutes } }
-            epgCache.remove(channel.id) // the cached now/next was built on the old shift
+            epgReader.invalidate(channel.id) // the cached now/next was built on the old shift
             epgRefresh.value++
         }
     }
@@ -465,14 +520,7 @@ class LiveViewModel(
      *  ranked so guide channels resembling [channelName] come first instead of a plain A-Z list. */
     suspend fun availableEpgChannels(channelName: String, query: String): List<tv.own.owntv.core.database.entity.EpgChannelEntity> {
         if (currentProfileId() == null) return emptyList()
-        val ids = ctx.value.sourceIds + epgSourceStore.getAll().map { it.id }
-        if (ids.isEmpty()) return emptyList()
-        // Fetch the whole (filtered) candidate set, not just the first 300 alphabetically — the best
-        // name match may sit far down the alphabet. Rank off-main, then cap for the dialog list.
-        val all = epgDao.listEpgChannels(ids, query.trim().lowercase(), EPG_PICKER_SCAN_LIMIT)
-        return kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
-            tv.own.owntv.core.epg.EpgMatcher.rankForPicker(channelName, all, { it.displayName }, { it.epgChannelId }).take(EPG_PICKER_RESULT_LIMIT)
-        }
+        return epgReader.availableEpgChannels(channelName, query, ctx.value.sourceIds)
     }
 
     val count: StateFlow<Int> = combine(_selected, ctx, hiddenCategoryIds) { key, c, hidden -> Triple(key, c, hidden) }
@@ -619,10 +667,11 @@ class LiveViewModel(
         setStalkerReconnect(null) // non-Stalker: URLs are stable, replay on reconnect
         previewEngine.play(
             targetUrl, muted = !livePreviewAudio.value,
-            meta = tv.own.owntv.player.MediaMeta(title = channel.name, subtitle = channelNumberLabel(channel), logoUrl = channel.displayLogoUrl),
+            meta = tv.own.owntv.player.MediaMeta(title = channel.name, subtitle = channelNumberLabel(channel), logoUrl = channel.displayLogoUrl, contentKey = mpvPinKey(channel)),
             userAgent = sourceUaMap[channel.sourceId],
             prerollSecsOverride = prerollFor(channel.sourceId),
             httpHeaders = channel.httpHeaders,
+            drmConfig = channel.drmConfig,
         )
     }
 
@@ -650,10 +699,11 @@ class LiveViewModel(
             setStalkerReconnect(channel.streamUrl) // C-3: re-resolve on reconnect if the URL expires
             previewEngine.play(
                 url, muted = !livePreviewAudio.value,
-                meta = tv.own.owntv.player.MediaMeta(title = channel.name, subtitle = channelNumberLabel(channel), logoUrl = channel.displayLogoUrl),
+                meta = tv.own.owntv.player.MediaMeta(title = channel.name, subtitle = channelNumberLabel(channel), logoUrl = channel.displayLogoUrl, contentKey = mpvPinKey(channel)),
                 userAgent = source.userAgent,
                 prerollSecsOverride = prerollFor(channel.sourceId),
                 httpHeaders = channel.httpHeaders,
+                drmConfig = channel.drmConfig,
             )
         }
     }
@@ -671,6 +721,10 @@ class LiveViewModel(
     /** Heading for the left overlay — the name of the active playback browse context. */
     private val _zapListTitle = MutableStateFlow<String?>(null)
     val zapListTitle: StateFlow<String?> = _zapListTitle.asStateFlow()
+    /** The rail the zap list came from, for the built-in ones (Favorites / History / All) whose names are
+     *  UI strings rather than provider data and so can never appear in [zapListTitle]. */
+    private val _zapListKey = MutableStateFlow<LiveKey?>(null)
+    val zapListKey: StateFlow<LiveKey?> = _zapListKey.asStateFlow()
     /** Provider category selected in the in-player browser, or null for a synthetic/caller-owned rail. */
     private var zapCategoryId: Long? = null
     private var zapArmed = false
@@ -710,6 +764,7 @@ class LiveViewModel(
             // previously loaded category.
             _canZap.value = list.size > 1
             _zapListTitle.value = categoryDao.getById(categoryId)?.name
+            _zapListKey.value = null
             _showCategoryBrowser.value = false
         }
     }
@@ -743,6 +798,7 @@ class LiveViewModel(
             _zapChannels.value = list
             _canZap.value = list.size > 1
             _zapListTitle.value = (catId?.let { categoryDao.getById(it)?.name })?.takeIf { it.isNotBlank() }
+            _zapListKey.value = null
         }
     }
 
@@ -804,6 +860,9 @@ class LiveViewModel(
      *  playing (no stop) — just clears the flag so [playPreview] works again. */
     fun onFullscreenExited() {
         _liveOnExo.value = false
+        // Leaving full-screen ends the rewind: the archive stream is torn down with the player, and the
+        // 1 Hz "behind live" ticker would otherwise keep running against nothing for the rest of the session.
+        clearTimeshift()
         // With the in-pane preview enabled, the preview pane re-takes the ExoPlayer engine on the next
         // focus and re-applies the preview mute — so we can leave it running here. But when live preview
         // is OFF, nothing ever re-takes it, and the engine would keep decoding the (unmuted) channel's
@@ -837,6 +896,15 @@ class LiveViewModel(
      *  provider category is metadata (used by [previewCategoryName]); it must not replace Favorites,
      *  History, All, a custom category, or the provider folder the user is actually browsing. */
     fun watchFullscreen(channel: ChannelEntity, list: List<ChannelEntity>) {
+        // Opened with no browse list behind it — the catch-up programme dialog does exactly this. Without
+        // a zap list, CH+/CH− and the channel-list button are dead for the rest of the session, so rebuild
+        // the channel's own category the way the Guide/Search path does.
+        if (list.none { it.id == channel.id }) {
+            armZapList(channel)
+            _zapListKey.value = null
+            ensurePlaying(channel)
+            return
+        }
         zapListJob?.cancel()
         zapList = list
         _zapChannels.value = list
@@ -845,6 +913,9 @@ class LiveViewModel(
         zapCategoryId = (key as? LiveKey.Folder)?.id
         zapArmed = true
         _zapListTitle.value = railItems.value.firstOrNull { it.key == key }?.title
+        // Built-in rails (Favorites / History / All) carry no title — their labels are UI strings. Hand the
+        // key out so the overlay can name them properly instead of falling back to "All channels".
+        _zapListKey.value = key
         ensurePlaying(channel)
     }
 
@@ -879,7 +950,7 @@ class LiveViewModel(
         if (i >= 0) {
             // Path 1: normal navigation on the live list.
             val nextIdx = tv.own.owntv.player.wrappedZapIndex(i, delta, list.size) ?: return
-            ensurePlaying(list[nextIdx])
+            zapTo(list[nextIdx])
             return
         }
         // Path 2: fallback via the saved pending context. The context's targetChannelId is the
@@ -896,8 +967,42 @@ class LiveViewModel(
             return
         }
         val next = prev[nextIdx]
-        ensurePlaying(next)
+        // Keep the anchor pointing at where the user now is, so a held CH+/- still chains while the
+        // tune is deferred — [zapTo] moves the shown channel immediately, which would otherwise make
+        // the very next press read this context as stale and stop dead.
+        pendingDirectTuneZapContext = ctx.copy(targetChannelId = next.id, previousIndex = nextIdx)
+        zapTo(next)
     }
+
+    /**
+     * CH+/- step: show the channel at once, open the stream once the user stops moving.
+     *
+     * Holding the channel key steps roughly every 170 ms, and every step used to open a stream —
+     * thirteen opens in 3.6 s on a real remote. Providers answer that as abuse: a one-session Xtream
+     * panel locks the account for ~2 minutes (HTTP 458, every channel refused until it clears), and a
+     * Stalker portal returns 429 for the duration of the burst. Neither is a playback problem, and no
+     * fallback ladder can help, because the stream the user actually wants is refused too.
+     *
+     * So the *decision* stays instant — the channel changes on screen, history and the zap anchor move,
+     * and the next press steps from here — while the network work waits [ZAP_TUNE_DELAY_MS] and is
+     * cancelled by the next press. Ten channels passed at speed cost one stream open instead of ten.
+     *
+     * Deliberately NOT applied to deliberate picks ([ensurePlaying] from the channel list, Guide, Home
+     * or a deep link): those are a single considered choice and must open immediately.
+     */
+    private fun zapTo(channel: ChannelEntity) {
+        _previewChannel.value = channel
+        pendingZapTuneJob?.cancel()
+        pendingZapTuneJob = viewModelScope.launch {
+            delay(ZAP_TUNE_DELAY_MS)
+            // Cleared before handing over, so this tune's own [ensurePlaying] doesn't cancel the job
+            // it is running inside.
+            pendingZapTuneJob = null
+            ensurePlaying(channel)
+        }
+    }
+
+    private var pendingZapTuneJob: Job? = null
 
     /**
      * Direct-tune: resolve a provider channel number to a channel and tune it.
@@ -1080,10 +1185,6 @@ class LiveViewModel(
         data object NotFound : ChannelNumberLookupResult
     }
 
-    private fun isChannelVisible(ch: ChannelEntity, cust: SectionCustomizations, hiddenCats: Set<Long>): Boolean =
-        CustomizeKeys.channel(ch) !in cust.hiddenItems &&
-            (ch.categoryId == null || ch.categoryId !in hiddenCats)
-
     /** Rebuild the zap list so CH+/- and the channel-list overlay work after jumping outside the
      *  original list window. Loads a bounded provider-order window centred on the tuned channel
      *  (half before, half after), applying hidden-channel/category filtering and custom names.
@@ -1168,6 +1269,10 @@ class LiveViewModel(
      *  stick on a black screen for HLS). */
     fun ensurePlaying(channel: ChannelEntity) {
         cancelPendingZapRebuild()
+        // A deliberate pick supersedes a CH+/- step still waiting out its delay — otherwise the deferred
+        // tune would land half a second later and drag the user off the channel they just chose.
+        pendingZapTuneJob?.cancel()
+        pendingZapTuneJob = null
         viewModelScope.launch { playChannel(channel) }
     }
 
@@ -1196,28 +1301,50 @@ class LiveViewModel(
     private suspend fun playChannel(channel: ChannelEntity) {
         // Live TV set to play externally: hand the channel over instead of tuning an in-app engine.
         // History is still recorded, so the channel shows up in History/Recently watched either way.
-        if (externalPlayerOn.value) { playExternal(channel); return }
+        // #115 — a protected channel stays in-app whatever this setting says: no standard intent extra
+        // carries a licence URL, so the external player would open it and fail immediately.
+        if (externalPlayerOn.value && channel.drmConfig == null) { playExternal(channel); return }
         _previewChannel.value = channel
-        timeshiftJob?.cancel(); tickJob?.cancel(); _timeshiftOffsetSec.value = null // normal live = not timeshifted
+        clearTimeshift() // normal live = not timeshifted
         _catchupActive.value = false // tuning live ends any archive playback the HUD was showing
-        // Self-learning routing: a channel the user pinned to mpv skips ExoPlayer entirely (no artifacts/silent
-        // first), straight to the engine that plays it. Everyone else gets the fast ExoPlayer-first path.
-        val pinned = isPinnedToMpv(channel)
-        // A new tune clears any "user chose ExoPlayer" override — that choice is per channel.
-        if (exoChosenByUser != channel.streamUrl) exoChosenByUser = null
+        // Three inputs, in descending authority: what the user pinned for THIS channel, the global engine
+        // setting, and what the app has learned about the panel.
+        val setting = liveEnginePreference.value
+        // Self-learning routing: a channel the user pinned skips the other engine entirely (no
+        // artifacts/silent first), straight to the one that plays it. A pin is a deliberate per-channel
+        // exception and therefore outranks the global setting — that is the whole point of the toggle.
+        val pin = enginePin(channel)
         // Same idea, learned instead of pinned: a panel already caught refusing its own signed segment
         // URLs can never be satisfied by ExoPlayer, so skip straight to mpv rather than replaying the
-        // detection (two dead 403s + the wait) on every further channel of that panel.
-        val refusing = !pinned && panelRefusesSegments(channel)
-        val reason = when {
-            pinned -> "mpv (pinned)"
-            refusing -> "mpv (panel refuses segments)"
-            else -> "exoplayer"
+        // detection (two dead 403s + the wait) on every further channel of that panel. Only ever consulted
+        // when the setting still allows both engines: in an "only" mode the user has ruled the other engine
+        // out, and a lesson the app taught itself may not overturn that. A pin may, because the user made it.
+        val refusing = pin == null && setting.allowsHandover && panelRefusesSegments(channel)
+        // #115 — a protected (Widevine/ClearKey) channel. mpv ships no CDM, so it cannot obtain a key
+        // from a licence server (it can only decrypt CENC from a key handed to it directly, which a
+        // playlist never provides). So this is not a preference to weigh against the others: it
+        // outranks the setting AND a per-channel pin, because handing such a channel to mpv can only
+        // produce a failure and a wasted handover.
+        val drmProtected = channel.drmConfig != null
+        val onMpv = if (drmProtected) false else pin ?: (refusing || setting.startsOnMpv)
+        // A pin that contradicts an "only" setting re-opens the handover for this one channel. Without
+        // that, the exception channel would be locked to the engine the user just said cannot play it,
+        // with the ladder forbidden from ever reaching the one that can — a dead end of our own making.
+        val preference = when {
+            drmProtected -> tv.own.owntv.player.EnginePreference.EXO_ONLY
+            setting.allowsHandover -> tv.own.owntv.player.EnginePreference.firstOn(onMpv)
+            onMpv == setting.startsOnMpv -> setting
+            else -> tv.own.owntv.player.EnginePreference.firstOn(onMpv)
         }
-        engineLog("tune '${channel.name}' -> $reason")
-        val onMpv = pinned || refusing
-        armLadder(channel, startsOnMpv = onMpv)
-        if (onMpv) startOnMpv(channel) else startOnExo(channel)
+        val reason = when {
+            drmProtected -> "exoplayer (drm)"
+            pin != null -> "${if (onMpv) "mpv" else "exoplayer"} (pinned)"
+            refusing -> "mpv (panel refuses segments)"
+            else -> "${if (onMpv) "mpv" else "exoplayer"} (setting)"
+        }
+        engineLog("tune '${channel.name}' -> $reason [${preference.name}]")
+        armLadder(channel, preference)
+        if (onMpv) startOnMpv(channel, reason) else startOnExo(channel)
         recordLiveHistory(channel)
     }
 
@@ -1262,15 +1389,22 @@ class LiveViewModel(
     private fun mpvPinKey(channel: ChannelEntity): String? =
         tv.own.owntv.core.player.enginePinKey(channel.sourceId, "LIVE", channel.remoteId)
 
-    /** Whether [channel] is pinned to mpv, honouring pins written by older builds under the stream
-     *  URL. A legacy hit is rewritten under the stable key so it survives the next re-sync/Stalker resolve. */
-    private fun isPinnedToMpv(channel: ChannelEntity): Boolean {
-        val pins = forceMpvUrls.value
+    /** The engine [channel] is pinned to — true = mpv, false = ExoPlayer, null = not pinned, follow the
+     *  setting. Honours pins written by older builds under the stream URL; a legacy hit is rewritten under
+     *  the stable key so it survives the next re-sync/Stalker resolve. */
+    private fun enginePin(channel: ChannelEntity): Boolean? {
         val key = mpvPinKey(channel)
-        if (key != null && key in pins) return true
-        if (channel.streamUrl !in pins) return false
+        val mpvPins = forceMpvUrls.value
+        val exoPins = forceExoUrls.value
+        if (key != null && key in mpvPins) return true
+        if (key != null && key in exoPins) return false
+        val legacy = when (channel.streamUrl) {
+            in mpvPins -> true
+            in exoPins -> false
+            else -> return null
+        }
         if (key != null) viewModelScope.launch { forceMpvStore.migrateKey(channel.streamUrl, key) }
-        return true
+        return legacy
     }
 
     /**
@@ -1279,13 +1413,13 @@ class LiveViewModel(
      *
      * The lesson is panel-wide and session-only, so the first channel of the session still pays the
      * detection and a provider that fixes its panel is back to the ExoPlayer-first path after the next
-     * app start. An explicit "use ExoPlayer" for this channel still wins — the user's choice is never
-     * overridden by a learned quirk. Stalker sources are excluded: their `streamUrl` is a cmd, not a
+     * app start. An explicit "use ExoPlayer" pin for this channel still wins, and so does an "only" engine
+     * setting — the caller does not consult this at all in either case, because a quirk the app taught
+     * itself may never overturn a choice the user made. Stalker sources are excluded: their `streamUrl` is a cmd, not a
      * URL, so there is no host to key on until it has been resolved (a network call this decision
      * must not make).
      */
     private suspend fun panelRefusesSegments(channel: ChannelEntity): Boolean {
-        if (exoChosenByUser == channel.streamUrl) return false
         val source = getSource(channel.sourceId)
         if (streamUrlResolver.needsResolve(source)) return false
         return LiveStreamQuirks.refusesSegments(channel.playStreamUrl(source))
@@ -1309,10 +1443,11 @@ class LiveViewModel(
             setStalkerReconnect(null) // non-Stalker: URLs are stable, replay on reconnect
             previewEngine.play(
                 targetUrl, muted = false,
-                meta = tv.own.owntv.player.MediaMeta(title = channel.name, subtitle = channelNumberLabel(channel), logoUrl = channel.displayLogoUrl),
+                meta = tv.own.owntv.player.MediaMeta(title = channel.name, subtitle = channelNumberLabel(channel), logoUrl = channel.displayLogoUrl, contentKey = mpvPinKey(channel)),
                 userAgent = sourceUaMap[channel.sourceId] ?: source?.userAgent,
                 prerollSecsOverride = prerollFor(channel.sourceId),
                 httpHeaders = channel.httpHeaders,
+                drmConfig = channel.drmConfig,
             )
         }
         watchExoOutcome(channel)
@@ -1338,17 +1473,23 @@ class LiveViewModel(
             setStalkerReconnect(channel.streamUrl) // C-3: re-resolve on reconnect if the URL expires
             previewEngine.play(
                 url, muted = false,
-                meta = tv.own.owntv.player.MediaMeta(title = channel.name, subtitle = channelNumberLabel(channel), logoUrl = channel.displayLogoUrl),
+                meta = tv.own.owntv.player.MediaMeta(title = channel.name, subtitle = channelNumberLabel(channel), logoUrl = channel.displayLogoUrl, contentKey = mpvPinKey(channel)),
                 userAgent = source.userAgent,
                 prerollSecsOverride = prerollFor(channel.sourceId),
                 httpHeaders = channel.httpHeaders,
+                drmConfig = channel.drmConfig,
             )
             watchExoOutcome(channel)
         }
     }
 
-    /** Start [channel] on the full mpv engine (pinned "compatibility" channel, or an ExoPlayer fallback). */
-    private fun startOnMpv(channel: ChannelEntity) { viewModelScope.launch { fallbackToMpv(channel, "pinned to compatibility mode") } }
+    /** Start [channel] on the full mpv engine — a pinned "compatibility" channel, the engine setting
+     *  asking for mpv first, or an ExoPlayer fallback. [reason] rides into the diagnostics, so it must
+     *  say which of those it was: a log that calls every mpv start a pin makes a setting-driven start
+     *  look like a stray pin, which is exactly the confusion these lines exist to prevent. */
+    private fun startOnMpv(channel: ChannelEntity, reason: String) {
+        viewModelScope.launch { fallbackToMpv(channel, reason) }
+    }
 
     /** HUD "compatibility mode" toggle: pin/unpin the current channel to mpv and swap engines live. */
     fun toggleForceMpv() {
@@ -1357,24 +1498,32 @@ class LiveViewModel(
         // the user is watching with the channel's CURRENT one. The HUD already hides this toggle during
         // catch-up (it offers the VOD engine toggle instead) — this is the belt-and-braces guard.
         if (_catchupActive.value) return
+        // Same reasoning while rewound into the live archive: swapping engines re-opens the channel at the
+        // live edge, throwing the user out of the rewind. The HUD hides the toggle then; this is the guard.
+        if (_timeshiftOffsetSec.value != null) return
+        // #115 — a protected channel has only one engine that can obtain its key. Swapping to mpv would
+        // trade a playing channel for a guaranteed failure, so the toggle does nothing here; the HUD
+        // hides it for such a channel, and this is the belt-and-braces guard.
+        if (channel.drmConfig != null) return
         // Base the swap on the ACTUAL running engine, not the pin: after an auto-fallback to mpv the channel
         // runs on mpv while still unpinned, and the old pin-based logic then did nothing on click. Keying off
         // _liveOnExo makes every click flip the live engine, with the pin following the choice.
         val goToMpv = _liveOnExo.value // on Exo now → switch to mpv; on mpv now → switch to Exo
         engineLog("engine toggle '${channel.name}' -> ${if (goToMpv) "mpv" else "exoplayer"} (currentlyOnExo=${_liveOnExo.value})")
         viewModelScope.launch {
-            // Pin to mpv when choosing mpv; unpin when choosing Exo. Write the stable key, and clear
-            // any legacy URL-keyed entry too so an un-pin can't leave the old one behind (P6).
+            // Pin to the chosen engine. Write the stable key, and clear any legacy URL-keyed entry too so
+            // the pin can't be contradicted by an older one left behind (P6).
             val key = mpvPinKey(channel)
-            // Choosing ExoPlayer here is an explicit override: suppress the auto-fallback for this
-            // channel until the next tune, so it can't be undone a second later by watchExoOutcome.
-            exoChosenByUser = if (goToMpv) null else channel.streamUrl
-            forceMpvStore.set(key ?: channel.streamUrl, goToMpv)
-            if (key != null) forceMpvStore.set(channel.streamUrl, false)
-            // A manual engine choice restarts the ladder around that engine, so the chosen one gets both
-            // of its formats before the other is considered — and so a channel it turns out to be unable
-            // to play still ends up somewhere that plays it, instead of on a spinner.
-            armLadder(channel, startsOnMpv = goToMpv)
+            forceMpvStore.pin(key ?: channel.streamUrl, goToMpv)
+            if (key != null) forceMpvStore.forget(channel.streamUrl)
+            // A manual engine choice restarts the ladder around that engine — and, for this tune only, as
+            // an "only" mode. This is the click the user just made, on the engine they just named, while
+            // watching: bouncing them off it seconds later (as the undecodable-audio check did, over and
+            // over, on a box where neither engine has sound) makes the control look broken and leaves no
+            // way to stay put. The NEXT tune of the same channel reads the pin instead and gets the full
+            // ladder back, so a channel the chosen engine genuinely cannot play still ends up somewhere
+            // that plays it rather than stuck forever on one bad decision.
+            armLadder(channel, tv.own.owntv.player.EnginePreference.onlyOn(goToMpv))
             if (goToMpv) {
                 fallbackToMpv(channel, "user chose compatibility mode") // ExoPlayer → mpv now
             } else {                    // mpv → ExoPlayer now
@@ -1406,6 +1555,7 @@ class LiveViewModel(
             zapCategoryId = null
             zapArmed = true
             _zapListTitle.value = null
+            _zapListKey.value = null
         }
         ensurePlaying(channel)
         return true
@@ -1415,20 +1565,6 @@ class LiveViewModel(
      *  plays but ExoPlayer can decode **none of its audio** (e.g. an AC3/E-AC3/DTS movie file added via M3U,
      *  on a device without that decoder — it'd play silently). mpv (FFmpeg) decodes everything. */
     private var exoOutcomeJob: Job? = null
-
-    /**
-     * Stream URL of the channel the user explicitly switched BACK to ExoPlayer with the HUD toggle.
-     * Keeps a *learned* routing quirk from overriding the choice at tune time (see
-     * [panelRefusesSegments]) — the user asked for this engine, so this channel starts there. Cleared
-     * on the next tune, because the choice is per channel.
-     *
-     * It deliberately does **not** disable the fallback ladder any more. It used to, which meant
-     * toggling onto ExoPlayer for a channel ExoPlayer cannot play left a permanent spinner with no
-     * `.ts` retry and no way back — worse than the bounce it was written to prevent. The ladder is the
-     * better answer to that bounce: the chosen engine now gets *both* of its formats before anything
-     * hands the channel elsewhere.
-     */
-    private var exoChosenByUser: String? = null
 
     private fun watchExoOutcome(channel: ChannelEntity) {
         exoOutcomeJob?.cancel()
@@ -1558,66 +1694,16 @@ class LiveViewModel(
 
     // ---- the fallback ladder ---------------------------------------------------------------------
 
-    /**
-     * One combination of engine and stream format. A live tune walks these in order, each **at most
-     * once**, and that finiteness is the whole safety property: without it an ExoPlayer failure that
-     * hands over to mpv and an mpv failure that hands back could bounce a channel between engines
-     * forever.
-     */
-    private enum class Rung(val onMpv: Boolean, val isHls: Boolean) {
-        EXO_HLS(onMpv = false, isHls = true),
-        EXO_TS(onMpv = false, isHls = false),
-        MPV_HLS(onMpv = true, isHls = true),
-        MPV_TS(onMpv = true, isHls = false),
-    }
-
-    /**
-     * The ladder for the tune currently on screen.
-     *
-     * Order follows where the tune *started*, so the engine the user (or a pin) asked for gets both of
-     * its formats tried before the other engine is considered at all:
-     *
-     *  - started on ExoPlayer → `exo HLS → exo TS → mpv HLS → mpv TS`
-     *  - started on mpv       → `mpv HLS → mpv TS → exo HLS → exo TS`
-     *
-     * The HLS rungs are dropped entirely when this channel has no HLS/TS distinction — "Prefer HLS" off
-     * for the playlist, a Stalker cmd, or a URL that is natively `.m3u8` — leaving the plain
-     * `exo → mpv` (or `mpv → exo`) pair, which is what happened before any of this existed.
-     *
-     * Why per-format rungs at all: a channel's `.m3u8` and its `.ts` are different muxes, and an engine
-     * that chokes on one can play the other. Traced on a 4K channel whose HLS audio ExoPlayer can never
-     * start (buffer full, `audio=false`), while mpv plays that very same `.m3u8` — so a ladder that
-     * skipped `mpv HLS` after ExoPlayer's HLS failure was skipping the combination that worked.
-     */
-    private var ladderUrl: String? = null
-    private var ladderOrder: List<Rung> = emptyList()
-    private val ladderSpent = mutableSetOf<Rung>()
+    /** The ladder for the tune currently on screen. The order, the HLS filtering and the per-engine
+     *  format lessons all live in [LiveLadder], which is unit-tested; everything with a side effect —
+     *  the log, the failure record and the engine handoff itself — stays here. */
+    private val ladder = LiveLadder()
 
     /** Reset the ladder for a fresh tune of [channel]. Rungs already climbed are forgotten — a new tune
      *  is a new chance, including for a channel that ended the last one on its final rung. */
-    private suspend fun armLadder(channel: ChannelEntity, startsOnMpv: Boolean) {
-        ladderUrl = channel.streamUrl
-        ladderSpent.clear()
+    private suspend fun armLadder(channel: ChannelEntity, preference: tv.own.owntv.player.EnginePreference) {
         forceTsForExo = null
-        val order = if (startsOnMpv) {
-            listOf(Rung.MPV_HLS, Rung.MPV_TS, Rung.EXO_HLS, Rung.EXO_TS)
-        } else {
-            listOf(Rung.EXO_HLS, Rung.EXO_TS, Rung.MPV_HLS, Rung.MPV_TS)
-        }
-        // Drop the HLS rungs this channel has no use for: no swap happened at all, or that engine has
-        // already learned in this session that its `.m3u8` doesn't work. Keeping the ladder honest
-        // matters — a rung the tune code would silently turn into the `.ts` one anyway would otherwise
-        // cost a duplicate attempt before the real next rung.
-        val hasHls = hasHlsAlternative(channel)
-        ladderOrder = order.filterNot {
-            it.isHls && (
-                !hasHls ||
-                    (it.onMpv && LiveStreamQuirks.lacksHlsVariantMpv(channel.streamUrl)) ||
-                    (!it.onMpv && LiveStreamQuirks.lacksHlsVariant(channel.streamUrl))
-                )
-        }
-        // The rung we are on right now is the first one of that order.
-        ladderOrder.firstOrNull()?.let { ladderSpent += it }
+        ladder.arm(channel.streamUrl, preference) { hasHlsAlternative(channel) }
     }
 
     /** Whether "Prefer HLS" actually rewrote this channel's URL, i.e. whether an HLS rung differs from a
@@ -1629,29 +1715,35 @@ class LiveViewModel(
     }
 
     /**
+     * Whether [reason] is the panel refusing the *request* rather than the stream failing: an
+     * account-busy 458, a 403, a rate limit and the rest of [LiveStreamQuirks.isRequestRefusal].
+     *
+     * Such a refusal must not move the ladder and must not teach it anything. It is not a property of
+     * the channel, the format or the engine — it is the account being busy, and it clears on its own.
+     * Traced on a one-session panel: ten channels opened in 1.5 s by scrolling the list locked the
+     * account for two minutes, three channels fell to their `.ts` rung during the lockout, and the app
+     * concluded the provider had no HLS at all for the rest of the session.
+     */
+    private fun isRequestRefusal(reason: String): Boolean =
+        tv.own.owntv.player.PlayerErrors.httpStatusIn(reason)
+            ?.let { LiveStreamQuirks.isRequestRefusal(it) } == true
+
+    /**
      * Move to the next untried rung after a failure on the current one, or return false when the ladder
      * is exhausted (the caller then leaves the failure on screen — there is genuinely nothing left).
      */
     private suspend fun advanceLadder(channel: ChannelEntity, reason: String): Boolean {
-        if (ladderUrl != channel.streamUrl) return false // a newer tune owns the ladder now
-        val next = ladderOrder.firstOrNull { it !in ladderSpent } ?: run {
+        if (!ladder.owns(channel.streamUrl)) return false // a newer tune owns the ladder now
+        // Defensive second gate: whatever this rung is stepping away from, a panel that refused the
+        // *request* has said nothing about stream format, so nothing may be learned from it. The primary
+        // gate is at the call sites, which do not step at all on a refusal — this one exists so a path
+        // added later cannot silently reintroduce the false lesson.
+        val next = ladder.advance(failureWasAboutFormat = !isRequestRefusal(reason)) ?: run {
             engineLog("'${channel.name}' — no fallback left ($reason)")
             recordLadderEvent(tv.own.owntv.player.PlayerFailureReason.LIVE_NO_FALLBACK, channel, reason)
             return false
         }
-        ladderSpent += next
-        // Remember the format lesson per engine, so the NEXT tune of this channel skips the dead rung
-        // instead of paying for it again. Never recorded when there was no swap to blame.
-        if (next.onMpv && !next.isHls && Rung.MPV_HLS in ladderSpent) {
-            LiveStreamQuirks.rememberNoHlsVariantMpv(channel.streamUrl)
-        }
-        if (!next.onMpv && !next.isHls && Rung.EXO_HLS in ladderSpent) {
-            LiveStreamQuirks.rememberNoHlsVariant(channel.streamUrl)
-        }
-        val label = when (next) {
-            Rung.EXO_HLS -> "ExoPlayer + HLS"; Rung.EXO_TS -> "ExoPlayer + TS"
-            Rung.MPV_HLS -> "mpv + HLS"; Rung.MPV_TS -> "mpv + TS"
-        }
+        val label = ladder.label(next)
         engineLog("'${channel.name}' falling back to $label ($reason)")
         recordLadderEvent(tv.own.owntv.player.PlayerFailureReason.LIVE_FALLBACK, channel, "$label — $reason")
         if (next.onMpv) {
@@ -1675,9 +1767,10 @@ class LiveViewModel(
     /** Put [channel] on ExoPlayer, releasing mpv first when it currently holds the stream. mpv's stop is
      *  asynchronous, so on a one-session panel handing over too early makes us our own competitor. */
     private suspend fun switchToExo(channel: ChannelEntity) {
+        clearTimeshift() // this restarts the channel at the live edge — the rewind is over
         if (!_liveOnExo.value) {
             player.stopAndAwaitRelease()
-            delay(500)
+            delay(tv.own.owntv.player.OwnTVPlayer.SURFACE_HANDOFF_MS)
             if (_previewChannel.value?.streamUrl != channel.streamUrl) return
         }
         startOnExo(channel)
@@ -1689,6 +1782,7 @@ class LiveViewModel(
 
     private suspend fun fallbackToMpv(channel: ChannelEntity, reason: String, forceTs: Boolean = false) {
         engineLog("starting mpv for '${channel.name}' — reason=$reason")
+        clearTimeshift() // the live channel is being re-opened at the edge — the rewind is over
         // Preserve the format Exo actually discovered. Some panels redirect their advertised `.ts`
         // endpoint to HLS; handing that misleading URL to mpv traps FFmpeg at the manifest EOF.
         //
@@ -1706,7 +1800,11 @@ class LiveViewModel(
         _liveOnExo.value = false            // shell flips to mpv's surface
         stalkerPreviewCmd = null
         previewEngine.stop()
-        delay(500)                          // let ExoPlayer's decoder release before mpv inits
+        // Let ExoPlayer's decoder release before mpv inits. Measured at 508 ms per handoff on the owner's
+        // Realtek box (C-F20) and deliberately kept: nothing exposes "the MediaCodec is released", so the
+        // only alternative to waiting is guessing, and guessing short reproduces the 0x80001000 claim
+        // failure these constants exist to prevent.
+        delay(tv.own.owntv.player.OwnTVPlayer.SURFACE_HANDOFF_MS)
         if (_previewChannel.value?.streamUrl == channel.streamUrl) {
             val source = sourceById[channel.sourceId] ?: sourceDao.getById(channel.sourceId)
             // Stalker stores the portal cmd — resolve it to a real URL (create_link) before mpv plays.
@@ -1735,7 +1833,7 @@ class LiveViewModel(
             if (_previewChannel.value?.streamUrl != channel.streamUrl) return // zapped away while resolving
             // C-3: mpv is now the active engine — install/clear the reconnect provider to match.
             setStalkerReconnect(if (isStalker) channel.streamUrl else null)
-            player.play(url, title = channel.name, subtitle = channelNumberLabel(channel), logoUrl = channel.displayLogoUrl, isLive = true, muted = false, userAgent = source?.userAgent, httpHeaders = channel.httpHeaders, livePrerollSecsOverride = prerollFor(channel.sourceId))
+            player.play(url, title = channel.name, subtitle = channelNumberLabel(channel), logoUrl = channel.displayLogoUrl, isLive = true, muted = false, userAgent = source?.userAgent, httpHeaders = channel.httpHeaders, contentKey = mpvPinKey(channel), livePrerollSecsOverride = prerollFor(channel.sourceId))
             watchMpvOutcome(channel)
         } else {
             // The only way out of this function that leaves the shell on mpv's surface with nothing
@@ -1816,28 +1914,12 @@ class LiveViewModel(
 
     /** Recent (already-aired) programmes for a catch-up channel, newest first — drives the Live TV
      *  catch-up picker. Bounded to the EPG we retain (≈ 2 days) and the channel's archive window. */
-    suspend fun catchupProgrammes(ch: ChannelEntity): List<tv.own.owntv.core.database.entity.EpgProgrammeEntity> = withContext(Dispatchers.IO) {
-        if (!ch.catchup) return@withContext emptyList()
-        val epgKey = (custom.value.epgMatches[CustomizeKeys.channel(ch)] ?: ch.epgChannelId)
-            ?.trim()?.lowercase()?.takeIf { it.isNotEmpty() } ?: return@withContext emptyList()
-        val now = System.currentTimeMillis()
-        val windowMs = (ch.catchupDays.coerceAtLeast(1) * 24L * 60 * 60 * 1000).coerceAtMost(CATCHUP_LOOKBACK_CAP_MS)
-        val ids = ctx.value.sourceIds + epgSourceStore.getAll().map { it.id }
-        // Shifted guide → shifted window, and the rows come back on the corrected clock, so the
-        // archive URL built from the picked programme asks for the time it really aired.
-        val shift = tv.own.owntv.core.epg.EpgShift.minutesFor(custom.value, ch, epgOffset.value)
-        val at = tv.own.owntv.core.epg.EpgShift.toStored(now, shift)
-        epgDao.programmesForChannel(ids, epgKey, at - windowMs, at + 60 * 60 * 1000)
-            .filter { it.startMs <= at }           // already started → catch-up applies
-            .sortedByDescending { it.startMs }      // most recent first
-            .take(80)
-            .map { tv.own.owntv.core.epg.EpgShift.apply(it, shift) }
-    }
+    suspend fun catchupProgrammes(ch: ChannelEntity): List<tv.own.owntv.core.database.entity.EpgProgrammeEntity> =
+        epgReader.catchupProgrammes(ch, custom.value, epgOffset.value, ctx.value.sourceIds)
 
     /** Full description for a programme picked in the catch-up dialog. The list query drops it to stay
      *  under the CursorWindow limit, so the detail popup fetches it on demand (same as the Guide). */
-    suspend fun programmeDescription(programmeId: Long): String? =
-        withContext(Dispatchers.IO) { runCatching { epgDao.programmeDescription(programmeId) }.getOrNull() }
+    suspend fun programmeDescription(programmeId: Long): String? = epgReader.programmeDescription(programmeId)
 
     /** True while a catch-up **archive programme** is what's on screen, rather than the live stream.
      *  The HUD keys off this: an archive is VOD-style playback, so it must offer the mpv/ExoPlayer VOD
@@ -1852,28 +1934,11 @@ class LiveViewModel(
     val catchupPlayer: StateFlow<SettingsRepository.CatchupPlayer> = settings.catchupPlayer
         .stateIn(viewModelScope, SharingStarted.Eagerly, SettingsRepository.CatchupPlayer.INTERNAL)
 
-    /** The archive URL for [programme] on [ch], or null when it can't be built. */
-    private suspend fun catchupUrl(ch: ChannelEntity, programme: tv.own.owntv.core.database.entity.EpgProgrammeEntity): String? =
-        withContext(Dispatchers.IO) {
-            val source = sourceDao.getById(ch.sourceId) ?: return@withContext null
-            // Stalker archive URLs are minted per-play via create_link (Phase E §5.6); the others
-            // are pure string templates handled by CatchupUrl.
-            if (source.type == SourceType.STALKER) {
-                ch.remoteId?.let { rid ->
-                    runCatching { streamUrlResolver.resolveCatchup(source, rid, programme.startMs, programme.stopMs) }
-                        .onFailure { Log.w(TAG, "Stalker catch-up resolve failed channelId=${ch.id}", it) }
-                        .getOrNull()
-                }
-            } else {
-                CatchupUrl.forSource(ch, programme, source, settings.resolveCatchupTimeZone(), xtreamClient)
-            }
-        }
-
     /** Hand an archive programme to an external app (VLC, MX Player). No HUD, resume or engine toggle
      *  once it leaves, but external players cope with mid-GOP archive segments some providers serve. */
     fun playCatchupExternal(ch: ChannelEntity, programme: tv.own.owntv.core.database.entity.EpgProgrammeEntity) {
         viewModelScope.launch {
-            val url = catchupUrl(ch, programme) ?: return@launch
+            val url = archiveUrls.forProgramme(ch, programme) ?: return@launch
             Log.i(ENGINE_TAG, "catch-up external '${ch.name}' prog='${programme.title}'")
             externalPlayerLauncher.launch(url, ch.name, programme.title)
             recordLiveHistory(ch, immediate = true)
@@ -1883,7 +1948,7 @@ class LiveViewModel(
     /** Replay a past programme from the channel's archive (seekable, like the Guide's "Watch from start"). */
     fun playCatchupProgramme(ch: ChannelEntity, programme: tv.own.owntv.core.database.entity.EpgProgrammeEntity) {
         viewModelScope.launch {
-            val url = catchupUrl(ch, programme) ?: return@launch
+            val url = archiveUrls.forProgramme(ch, programme) ?: return@launch
             val sourceUa = withContext(Dispatchers.IO) { sourceDao.getById(ch.sourceId)?.userAgent }
             // The archive URL shape decides whether ExoPlayer can take it at all (progressive .ts vs
             // .m3u8 vs an extension-less panel endpoint), so log it redacted — it's the first thing
@@ -1895,6 +1960,14 @@ class LiveViewModel(
             clearLiveOnExo() // catch-up is a VOD-style archive on mpv, not the live ExoPlayer channel
             // isLive=false → seekable archive; isArchive → mid-GOP tolerant (hardware first, software rescue).
             player.play(url, title = ch.name, subtitle = programme.title, logoUrl = ch.displayLogoUrl, isLive = false, isArchive = true, userAgent = sourceUa, httpHeaders = ch.httpHeaders)
+            // The picture is this programme's own airtime, not the present — drive the "watching" clock
+            // from its start, exactly as the rewind path does from the archive's start.
+            archiveBaseWall = programme.startMs
+            startWatchingTick()
+            // Watching a programme from a channel's archive is watching that channel — the external
+            // catch-up path above has always recorded it, and this one silently did not, so the channel
+            // never reached History or Recently watched when catch-up played in-app.
+            recordLiveHistory(ch, immediate = true)
         }
     }
 
@@ -1913,11 +1986,89 @@ class LiveViewModel(
     private var timeshiftJob: Job? = null
     private var tickJob: Job? = null
     private var timeshiftStartWall = 0L // wall-clock time of the loaded archive's start (for the live counter)
-    private val rewindStepSec = 30
 
-    /** 30 s buttons. */
-    fun rewindLive() = scrubLive(rewindStepSec)
-    fun forwardLive() = scrubLive(-rewindStepSec)
+    /** Wall-clock instant the loaded archive starts at, for both the rewind and the guide catch-up
+     *  paths. Set alongside [timeshiftStartWall] so [watchingWallMs] works for either. */
+    private var archiveBaseWall: Long? = null
+
+    private fun clearWatchingClock() {
+        watchingTickJob?.cancel()
+        archiveBaseWall = null
+        _watchingWallMs.value = null
+    }
+
+    private var watchingTickJob: Job? = null
+
+    /** Advance [watchingWallMs] with playback. Used by the guide catch-up path; the rewind path folds
+     *  the same update into its own "behind live" ticker rather than running a second loop. */
+    private fun startWatchingTick() {
+        watchingTickJob?.cancel()
+        watchingTickJob = viewModelScope.launch {
+            while (true) {
+                val base = archiveBaseWall ?: break
+                _watchingWallMs.value = base + player.position.value
+                delay(1_000)
+                // The archive ended or failed: stop claiming a time for a picture that is not there.
+                if (player.error.value != null || !player.hasActiveStream) { _watchingWallMs.value = null; break }
+            }
+        }
+    }
+    /** Settings → Live rewind step (default 30 s), read live so a change applies without a restart. */
+    private val rewindStepSec: StateFlow<Int> = settings.liveRewindStepSec
+        .stateIn(
+            viewModelScope, SharingStarted.Eagerly,
+            tv.own.owntv.features.settings.data.SeekSteps.DEFAULT_LIVE_REWIND_STEP_SEC,
+        )
+
+    /** One press of the archive rewind/forward buttons. */
+    fun rewindLive() = scrubLive(rewindStepSec.value)
+    fun forwardLive() = scrubLive(-rewindStepSec.value)
+
+    // ---- "Go back to…" — aim at a point in the archive instead of nudging toward it ----------------
+    // The rewind button moves 30 s a press, so three hours back is a held key and a crawling counter.
+    // These jump straight there. Same archive machinery ([scheduleTimeshiftLoad]), just a bigger offset,
+    // so nothing about how a stream is opened changes.
+
+    /** How deep [ch]'s archive is, in seconds — the bound every jump is clamped to. */
+    private fun catchupWindowSec(ch: ChannelEntity): Int =
+        (ch.catchupDays.takeIf { it > 0 } ?: DEFAULT_CATCHUP_DAYS) * 24 * 3600
+
+    /** Offsets offered for [ch], nearest first. Empty when the channel has no archive. */
+    fun catchupJumpOptions(ch: ChannelEntity): List<Int> =
+        if (!ch.catchup) emptyList() else CatchupJumps.optionsFor(catchupWindowSec(ch))
+
+    /** Offsets for the channel on screen — the player HUD's "Go back to…" list. */
+    fun currentJumpOptions(): List<Int> = _previewChannel.value?.let { catchupJumpOptions(it) } ?: emptyList()
+
+    /** Archive depth of [ch] / of the channel on screen, in seconds — the bound the exact-time picker
+     *  clamps its day and HH:MM wheels to. */
+    fun catchupWindowOf(ch: ChannelEntity): Int = if (!ch.catchup) 0 else catchupWindowSec(ch)
+    fun currentCatchupWindowSec(): Int = _previewChannel.value?.let { catchupWindowOf(it) } ?: 0
+
+    /** Jump the channel already on screen to [offsetSec] behind live (absolute, not relative — this is
+     *  aiming, so a second pick from the list must not stack on top of the first). */
+    fun jumpBackTo(offsetSec: Int) {
+        val ch = _previewChannel.value ?: return
+        if (!ch.catchup) return
+        val off = offsetSec.coerceIn(1, catchupWindowSec(ch))
+        _catchupActive.value = false // a live rewind, not a fixed programme: the HUD keeps its live chrome
+        _timeshiftOffsetSec.value = off
+        scheduleTimeshiftLoad(ch, off)
+    }
+
+    /** Open [ch] straight into its archive at [offsetSec] behind live, from the browse list — the
+     *  channel is not playing yet, so this also arms CH+/CH− and records the watch, exactly as tuning
+     *  it live would. Without that the channel-list overlay and zapping stay dead for the session. */
+    fun playCatchupAt(ch: ChannelEntity, offsetSec: Int) {
+        if (!ch.catchup) return
+        val off = offsetSec.coerceIn(1, catchupWindowSec(ch))
+        armZapList(ch)
+        _previewChannel.value = ch
+        _catchupActive.value = false
+        _timeshiftOffsetSec.value = off
+        scheduleTimeshiftLoad(ch, off)
+        recordLiveHistory(ch, immediate = true)
+    }
 
     /** Move [deltaSec] further back (+) or toward live (−) into the archive (also drives the timeline
      *  scrubber). Coalesced so holding a key scrubs freely and loads the archive once at the final point;
@@ -1925,17 +2076,31 @@ class LiveViewModel(
     fun scrubLive(deltaSec: Int) {
         val ch = _previewChannel.value ?: return
         if (!ch.catchup) return
-        val maxBack = (ch.catchupDays.takeIf { it > 0 } ?: 7) * 24 * 3600
+        val maxBack = (ch.catchupDays.takeIf { it > 0 } ?: DEFAULT_CATCHUP_DAYS) * 24 * 3600
         val next = ((_timeshiftOffsetSec.value ?: 0) + deltaSec).coerceIn(0, maxBack)
         if (next == 0) { goToLive(); return }
         _timeshiftOffsetSec.value = next
         scheduleTimeshiftLoad(ch, next)
     }
 
-    /** Jump back to the real-time live edge (back on the fast ExoPlayer engine). */
-    fun goToLive() {
+    /**
+     * Drop every trace of a live rewind: the pending archive load, the "behind live" ticker and the
+     * offset the HUD reads from.
+     *
+     * Anything that puts the channel back on a real-time stream has to call this. The rewind lived in
+     * its own state, apart from tune state, so an engine change (compatibility mode, a ladder fallback)
+     * threw the user back to the live edge while the counter kept ticking upward against a stream that
+     * was no longer the archive.
+     */
+    private fun clearTimeshift() {
         timeshiftJob?.cancel(); tickJob?.cancel()
         _timeshiftOffsetSec.value = null
+        clearWatchingClock()
+    }
+
+    /** Jump back to the real-time live edge (back on the fast ExoPlayer engine). */
+    fun goToLive() {
+        clearTimeshift()
         _previewChannel.value?.let { ensurePlaying(it) }
     }
 
@@ -1948,7 +2113,7 @@ class LiveViewModel(
             val tz = withContext(Dispatchers.IO) { settings.resolveCatchupTimeZone() }
             val (url, sourceUa) = withContext(Dispatchers.IO) {
                 val source = sourceDao.getById(ch.sourceId) ?: return@withContext null
-                buildLiveTimeshiftUrl(ch, source, startMs, offsetSec, tz)?.let { it to source.userAgent }
+                archiveUrls.forTimeshift(ch, source, startMs, offsetSec, tz)?.let { it to source.userAgent }
             } ?: return@launch
             if (_timeshiftOffsetSec.value == null) return@launch // user jumped back to live meanwhile
             // Keep the rewind instant semantic. The player HUD formats it with the current
@@ -1965,6 +2130,7 @@ class LiveViewModel(
                 rewindStartMs = startMs,
             )
             timeshiftStartWall = startMs
+            archiveBaseWall = startMs
             startOffsetTick()
         }
     }
@@ -1977,37 +2143,16 @@ class LiveViewModel(
             while (true) {
                 delay(1_000)
                 if (_timeshiftOffsetSec.value == null) break
+                // The archive failed: there is nothing left to count against, and leaving the offset set
+                // kept the rewind UI (and its "behind live" figure) alive over an error screen.
+                if (player.error.value != null) { clearTimeshift(); break }
+                // The stream is gone entirely (player stopped / another item took over). Stop ticking but
+                // leave the offset alone — a reload in flight still counts as the same rewind.
+                if (!player.hasActiveStream) break
                 val behindSec = ((System.currentTimeMillis() - (timeshiftStartWall + player.position.value)) / 1000)
                 _timeshiftOffsetSec.value = behindSec.toInt().coerceAtLeast(0)
+                archiveBaseWall?.let { _watchingWallMs.value = it + player.position.value }
             }
-        }
-    }
-
-    private suspend fun buildLiveTimeshiftUrl(ch: ChannelEntity, source: tv.own.owntv.core.database.entity.SourceEntity, startMs: Long, offsetSec: Int, tz: java.util.TimeZone): String? {
-        val durationMin = (offsetSec / 60 + 5).coerceAtLeast(1) // rewound window + buffer to play up to live
-        return when (source.type) {
-            SourceType.XTREAM -> ch.remoteId?.let {
-                // Always `.ts` — live rewind reads the same timeshift server as catch-up, and "Prefer
-                // HLS" deliberately does not apply to it. See [CatchupUrl.forSource] for why: the
-                // archive has no HLS repackager, so `.m3u8` there answers with an error page.
-                xtreamClient.timeshiftUrl(source, it, startMs, durationMin, tz, "ts")
-            }
-            // No HLS swap here: [resolveStreamUrl] is Xtream-only, so it would be a no-op on M3U.
-            SourceType.M3U -> CatchupUrl.forM3u(
-                ch.streamUrl,
-                ch.catchupType,
-                ch.catchupSource,
-                startMs,
-                startMs + durationMin * 60_000L,
-                tz,
-            )
-            // Stalker rewind = the same per-play archive create_link as catch-up (Phase E §5.6).
-            SourceType.STALKER -> ch.remoteId?.let { rid ->
-                runCatching { streamUrlResolver.resolveCatchup(source, rid, startMs, startMs + durationMin * 60_000L) }
-                    .onFailure { Log.w(TAG, "Stalker rewind resolve failed channelId=${ch.id}", it) }
-                    .getOrNull()
-            }
-            else -> null
         }
     }
 
@@ -2029,64 +2174,6 @@ class LiveViewModel(
         _previewChannel.value = null
     }
 
-    /** Now/next for [ch], cached ~5 min. Prefers a manual EPG match / stored bulk guide, then falls
-     *  back to Xtream's short EPG API. */
-    private suspend fun loadEpg(ch: ChannelEntity): EpgNowNext? = withContext(Dispatchers.IO) {
-        val now = System.currentTimeMillis()
-        epgCache[ch.id]?.takeIf { now - it.at < 5 * 60_000 }?.let { return@withContext it.data }
-
-        // 1) Bulk guide via the effective EPG id (manual match overrides the channel's own id).
-        val epgKey = (custom.value.epgMatches[CustomizeKeys.channel(ch)] ?: ch.epgChannelId)?.trim()?.lowercase()?.takeIf { it.isNotEmpty() }
-        // Guide shift (global or per-channel): the stored rows keep the feed's own clock, so we look
-        // up the SHIFTED "now" and move what comes back — display and catch-up then agree.
-        val shift = tv.own.owntv.core.epg.EpgShift.minutesFor(custom.value, ch, epgOffset.value)
-        if (epgKey != null) {
-            val at = tv.own.owntv.core.epg.EpgShift.toStored(now, shift)
-            val nowProg = epgDao.nowPlaying(epgKey, at)
-            val future = epgDao.upcoming(epgKey, at, 6).first().filter { it.startMs > (nowProg?.startMs ?: 0) }
-            val nextProg = future.firstOrNull()
-            if (nowProg != null || nextProg != null) {
-                val prevProg = epgDao.previousProgramme(epgKey, nowProg?.startMs ?: at)
-                // Days of stored guide — accurate for bulk-guide channels (the short-EPG API path
-                // leaves this null, since its ~8 entries only span a few hours).
-                val days = runCatching { epgDao.coverageDays(epgKey) }.getOrNull()?.takeIf { it > 0 }
-                fun tv.own.owntv.core.database.entity.EpgProgrammeEntity.shifted() =
-                    tv.own.owntv.core.epg.EpgShift.apply(this, shift).toXt()
-                val result = EpgNowNext(nowProg?.shifted(), nextProg?.shifted(), future.drop(1).take(4).map { it.shifted() }, previous = prevProg?.shifted(), coverageDays = days)
-                epgCache[ch.id] = CachedEpg(now, result)
-                return@withContext result
-            }
-        }
-
-        // 2) Provider short-EPG API fallback (Xtream get_short_epg / Stalker get_short_epg, Phase E §5.5).
-        val streamId = ch.remoteId ?: return@withContext null
-        val source = sourceDao.getById(ch.sourceId) ?: return@withContext null
-        val rawEntries = when (source.type) {
-            SourceType.XTREAM -> runCatching { xtreamClient.getShortEpg(source, streamId, limit = 8) }
-                .getOrNull().orEmpty()
-            SourceType.STALKER -> runCatching {
-                streamUrlResolver.shortEpg(source, streamId)
-                    .map { XtEpgEntry(title = it.title, description = it.description, startMs = it.startMs, stopMs = it.stopMs) }
-            }.getOrNull().orEmpty()
-            else -> return@withContext null
-        }
-        // The provider's own guide needs the same shift as the stored one — same channel, same clock.
-        val entries = if (shift == 0) rawEntries else rawEntries.map {
-            it.copy(startMs = it.startMs + shift * 60_000L, stopMs = it.stopMs + shift * 60_000L)
-        }
-        // A gap in the provider's own guide data around "now" (nothing covers this instant) must leave
-        // current null — picking the next entry that simply hasn't ended yet would mislabel an upcoming
-        // programme as live (issue #68). "Next"/"Later" are computed independently below, so a genuine
-        // gap correctly shows no "Now" while the upcoming programme still appears as "Next".
-        val current = entries.firstOrNull { it.startMs <= now && it.stopMs > now }
-        val future = entries.filter { it.startMs > (current?.startMs ?: now) }.sortedBy { it.startMs }
-        // Short-EPG responses sometimes include the just-finished programme — surface it as "Before".
-        val previous = entries.filter { it.stopMs <= (current?.startMs ?: now) }.maxByOrNull { it.stopMs }
-        val result = EpgNowNext(current, future.firstOrNull(), future.drop(1).take(4), previous = previous)
-        epgCache[ch.id] = CachedEpg(now, result)
-        result
-    }
-
     /**
      * The programme currently airing on each of [channels] (channel id → title), looked up in ONE batch
      * against the stored bulk guide — same query the Home "On Now" rail uses. This powers the small
@@ -2095,73 +2182,26 @@ class LiveViewModel(
      * guide simply has no entry here, and the row shows no second line. Returns only channels that
      * actually have something airing right now.
      */
-    suspend fun nowPlayingFor(channels: List<ChannelEntity>): Map<Long, String> = withContext(Dispatchers.IO) {
-        if (channels.isEmpty()) return@withContext emptyMap()
-        val now = System.currentTimeMillis()
-        val epgIds = epgSourceStore.getAll().map { it.id }
-        val sourceIds = (channels.map { it.sourceId } + epgIds).distinct()
-        // Manual EPG-match overrides take precedence over the channel's own epgChannelId, mirroring loadEpg.
-        // Shifted channels look up a different instant, so the batch is grouped by shift — with no
-        // offsets configured (the normal case) that's still exactly one query group.
-        val cust = custom.value
-        val channelKeys = channels.mapNotNull { ch ->
-            val key = (cust.epgMatches[CustomizeKeys.channel(ch)] ?: ch.epgChannelId)
-                ?.trim()?.lowercase()?.takeIf { it.isNotEmpty() }
-            if (key != null) Triple(ch.id, key, tv.own.owntv.core.epg.EpgShift.minutesFor(cust, ch, epgOffset.value)) else null
-        }
-        if (channelKeys.isEmpty()) return@withContext emptyMap()
-        val result = HashMap<Long, String>()
-        for ((shift, group) in channelKeys.groupBy { it.third }) {
-            val at = tv.own.owntv.core.epg.EpgShift.toStored(now, shift)
-            val rowsByKey = group
-                .map { it.second }.distinct()
-                .chunked(400)
-                .flatMap { keys -> epgDao.programmeSummariesForChannels(sourceIds, keys, at, at + 1) }
-                .groupBy { it.epgChannelId }
-            for ((channelId, epgKey, _) in group) {
-                rowsByKey[epgKey]
-                    ?.firstOrNull { at in it.startMs until it.stopMs }
-                    ?.let { result[channelId] = it.title }
-            }
-        }
-        result
-    }
+    suspend fun nowPlayingFor(channels: List<ChannelEntity>): Map<Long, String> =
+        epgReader.nowPlayingFor(channels, custom.value, epgOffset.value)
 
     private suspend fun currentProfileId(): Long? {
         val preferred = settings.activeProfileId.first()
         return if (preferred >= 0) profileDao.resolveExistingProfileId(preferred) else null
     }
 
-    private fun tv.own.owntv.core.database.entity.EpgProgrammeEntity.toXt() =
-        XtEpgEntry(title = title, description = description, startMs = startMs, stopMs = stopMs)
-
-    private fun pagingSource(key: LiveKey, c: Ctx, query: String, sort: SettingsRepository.SortMode): PagingSource<Int, ChannelEntity> {
-        val ids = c.sourceIds.ifEmpty { listOf(-1L) }
-        val playlist = sort == SettingsRepository.SortMode.PLAYLIST
-        return if (query.isBlank()) {
-            when (key) {
-                LiveKey.All -> if (playlist) channelDao.pagingAllOriginal(ids) else channelDao.pagingAll(ids)
-                LiveKey.Favorites -> channelDao.pagingFavoritesManual(c.profileId, ContentOrderEntity.FAV_CONTEXT, ids)
-                LiveKey.History -> channelDao.pagingHistory(c.profileId, ids)
-                is LiveKey.Custom -> customCategoryDao.pagingChannels(c.profileId, key.id, ids)
-                is LiveKey.Folder -> {
-                    val ctxKey = folderContextKeys.value[key.id] ?: ""
-                    // C3 fast path: no manual order in this folder → the plain indexed query has
-                    // the identical (sortOrder, name) order without the join-sort.
-                    if (ctxKey !in orderedContexts.value) channelDao.pagingByCategory(key.id)
-                    else channelDao.pagingByCategoryManual(key.id, c.profileId, ctxKey)
-                }
-            }
-        } else {
-            when (key) {
-                LiveKey.All -> channelDao.searchAll(query, ids)
-                LiveKey.Favorites -> channelDao.searchFavorites(query, c.profileId, ids)
-                LiveKey.History -> channelDao.searchHistory(query, c.profileId, ids)
-                is LiveKey.Custom -> customCategoryDao.searchChannels(query, c.profileId, key.id, ids)
-                is LiveKey.Folder -> channelDao.searchInCategory(query, key.id)
-            }
-        }
-    }
+    private fun pagingSource(key: LiveKey, c: Ctx, query: String, sort: SettingsRepository.SortMode): PagingSource<Int, ChannelEntity> =
+        livePagingSource(
+            key = key,
+            profileId = c.profileId,
+            sourceIds = c.sourceIds,
+            query = query,
+            sort = sort,
+            channelDao = channelDao,
+            customCategoryDao = customCategoryDao,
+            contextKey = { folderContextKeys.value[it] },
+            hasManualOrder = { it in orderedContexts.value },
+        )
 
     fun enterMoveMode(channel: ChannelEntity, key: LiveKey) {
         viewModelScope.launch {
@@ -2176,14 +2216,21 @@ class LiveViewModel(
                 is LiveKey.Folder -> channelDao.snapshotByCategoryManual(key.id, pid, contextKey, 5000)
                 is LiveKey.Custom -> customCategoryDao.snapshotChannels(pid, key.id, ctx.value.sourceIds.ifEmpty { listOf(-1L) }, 5000)
                 LiveKey.Favorites -> channelDao.snapshotFavoritesManual(pid, contextKey, ctx.value.sourceIds.ifEmpty { listOf(-1L) }, 5000)
-                LiveKey.History, LiveKey.All -> return@launch
+                // Catch-up joins History/All as a computed view: it has no stored order to move within.
+                LiveKey.History, LiveKey.All, LiveKey.Catchup -> return@launch
             }
             val idx = items.indexOfFirst { it.id == channel.id }
             if (idx < 0) return@launch
             _moveState.value = ChannelMoveState(items, idx, contextKey)
+            // Manual order is only visible in playlist order, so Move switches the list to it — but that
+            // is a means, not a choice the user made. Remember what they had so Cancel can put it back.
+            sortBeforeMove = sortMode.value
             settings.setSortLive(SettingsRepository.SortMode.PLAYLIST)
         }
     }
+
+    /** The sort the user was on before [enterMoveMode] switched the list to playlist order. */
+    private var sortBeforeMove: SettingsRepository.SortMode? = null
 
     fun moveUp() {
         val s = _moveState.value ?: return
@@ -2206,6 +2253,7 @@ class LiveViewModel(
     fun commitMove() {
         val s = _moveState.value ?: return
         _moveState.value = null
+        sortBeforeMove = null // the new order IS playlist order — staying on it is the point
         viewModelScope.launch {
             val pid = currentProfileId() ?: return@launch
             contentOrderDao.replaceContext(
@@ -2219,7 +2267,15 @@ class LiveViewModel(
         }
     }
 
-    fun cancelMove() { _moveState.value = null }
+    fun cancelMove() {
+        _moveState.value = null
+        // Cancel means nothing changed — including the sort Move switched away from.
+        val previous = sortBeforeMove ?: return
+        sortBeforeMove = null
+        if (previous != SettingsRepository.SortMode.PLAYLIST) {
+            viewModelScope.launch { settings.setSortLive(previous) }
+        }
+    }
 
     fun removeFromHistory(channelId: Long) {
         viewModelScope.launch {
@@ -2228,35 +2284,37 @@ class LiveViewModel(
         }
     }
 
-    private fun countFlow(key: LiveKey, c: Ctx, hiddenCats: Set<Long>): Flow<Int> {
-        val ids = c.sourceIds.ifEmpty { listOf(-1L) }
-        return when (key) {
-            LiveKey.All -> if (hiddenCats.isEmpty()) channelDao.countAll(ids) else channelDao.countAllExcluding(ids, hiddenCats.toList())
-            LiveKey.Favorites -> channelDao.countFavorites(c.profileId, ids)
-            LiveKey.History -> channelDao.countHistory(c.profileId, ids)
-            is LiveKey.Custom -> customCategoryDao.countMembers(c.profileId, MediaType.LIVE, key.id, ids)
-            is LiveKey.Folder -> channelDao.countByCategory(key.id)
-        }
-    }
+    private fun countFlow(key: LiveKey, c: Ctx, hiddenCats: Set<Long>): Flow<Int> =
+        liveCountFlow(key, c.profileId, c.sourceIds, hiddenCats, channelDao, customCategoryDao)
 
     private companion object {
         const val ENGINE_TAG = "LiveEngine"
+
         /** How long a channel must stay tuned before it counts as watched — see [recordLiveHistory]. */
         const val HISTORY_DEBOUNCE_MS = 5_000L
         const val TAG = "OwnTVHome"
-        // Match EPG picker: how many guide channels to scan for name-ranking vs. show in the dialog.
-        const val EPG_PICKER_SCAN_LIMIT = 20_000
-        const val EPG_PICKER_RESULT_LIMIT = 300
         // In-player channel lists: one category is normally far smaller, but cap the uncategorized
         // → All Channels fallback so a huge playlist can't be pulled into memory on every tune.
         const val ZAP_LIST_LIMIT = 2_000
+
+        /** How long a CH+/- step waits before it actually opens the stream. Comfortably longer than the
+         *  ~170 ms D-pad repeat, so a held key resolves to one tune, and short enough that a single
+         *  deliberate step still feels immediate. */
+        const val ZAP_TUNE_DELAY_MS = 500L
         const val HISTORY_LIST_LIMIT = 30
         val defaultRail = listOf(
             LiveRailItem(LiveKey.Favorites, icon = OwnTVIcon.FAVORITE),
             LiveRailItem(LiveKey.History, icon = OwnTVIcon.HISTORY),
             LiveRailItem(LiveKey.All),
         )
-        const val CATCHUP_LOOKBACK_CAP_MS = 48L * 60 * 60 * 1000 // bounded by the EPG we retain (~2 days)
+
+        /** [defaultRail] with the Catch-up entry inserted before All when [hasCatchup]. */
+        fun railWithCatchup(hasCatchup: Boolean): List<LiveRailItem> =
+            if (!hasCatchup) defaultRail
+            // CATCHUP (a TV with a replay loop), not EPG or a calendar: this rail is the guide-free
+            // route, and a calendar next to Favorites/History would read as "schedule" — the one thing
+            // it deliberately is not.
+            else defaultRail.dropLast(1) + LiveRailItem(LiveKey.Catchup, icon = OwnTVIcon.CATCHUP) + defaultRail.last()
         const val ZAP_WINDOW_HALF = 50 // channels loaded on each side of the tuned channel for CH+/-
         /** How long ExoPlayer gets to reach a first frame (or an error) before the channel goes to mpv,
          *  *on top of* any requested pre-buffer. Past this it is not slow, it is stuck — see

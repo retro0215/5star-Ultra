@@ -23,6 +23,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -46,6 +47,7 @@ import tv.own.owntv.features.downloads.DownloadsScreen
 import tv.own.owntv.features.epg.EpgScreen
 import tv.own.owntv.features.home.HomeScreen
 import tv.own.owntv.features.home.HomeViewModel
+import tv.own.owntv.features.live.LiveKey
 import tv.own.owntv.features.live.LiveScreen
 import tv.own.owntv.features.live.LiveViewModel
 import tv.own.owntv.features.movies.MoviesScreen
@@ -159,6 +161,20 @@ fun OwnTVShell(
     // Local subtitle-file picker (plan §7) — the same TV-safe in-app browser local M3U import uses.
     var showLocalSubPicker by remember { mutableStateOf(false) }
     val localSubToast = tv.own.owntv.ui.components.rememberInAppToast()
+    // Metadata allowance: tell the user ONCE per app start that their daily share of the shared
+    // metadata service is gone, rather than letting posters and plots quietly stop appearing. Lives in
+    // the shell because it can happen on any screen, and the shell is the one toast that is always
+    // composed. `remember` (not rememberSaveable) is the once-per-launch scope we want.
+    val metadataBudget = koinInject<tv.own.owntv.core.metadata.MetadataBudget>()
+    val budgetRefusedAt by metadataBudget.refusedAt.collectAsStateWithLifecycle()
+    var budgetNoticeShown by remember { mutableStateOf(false) }
+    val budgetNotice = androidx.compose.ui.res.stringResource(tv.own.owntv.R.string.settings_metadata_limit_reached)
+    LaunchedEffect(budgetRefusedAt) {
+        if (budgetRefusedAt > 0L && !budgetNoticeShown) {
+            budgetNoticeShown = true
+            localSubToast.show(budgetNotice)
+        }
+    }
     val mpvEngine = remember(player) { tv.own.owntv.player.MpvPlaybackEngine(player) }
     // Audio focus + MediaSession (F27). This is the only place that knows which engine currently owns
     // the speaker, so it hands that engine over and takes it back when the player closes.
@@ -213,7 +229,15 @@ fun OwnTVShell(
     var showHistoryList by remember { mutableStateOf(false) }
     val zapChannels by liveVm.zapChannels.collectAsStateWithLifecycle()
     val zapListTitle by liveVm.zapListTitle.collectAsStateWithLifecycle()
-    val zapOverlayTitle = zapListTitle ?: stringResource(R.string.content_category_all_channels)
+    val zapListKey by liveVm.zapListKey.collectAsStateWithLifecycle()
+    // Favorites and History have no provider name to show — their labels are UI strings, so the overlay
+    // used to head both of them "All channels".
+    val zapOverlayTitle = zapListTitle ?: when (zapListKey) {
+        LiveKey.Favorites -> stringResource(R.string.content_category_favorites)
+        LiveKey.History -> stringResource(R.string.content_category_history)
+        LiveKey.Catchup -> stringResource(R.string.content_catchup)
+        else -> stringResource(R.string.content_category_all_channels)
+    }
     val showCategoryBrowser by liveVm.showCategoryBrowser.collectAsStateWithLifecycle()
     val browserCategories by liveVm.browserCategories.collectAsStateWithLifecycle()
     val previewChannel by liveVm.previewChannel.collectAsStateWithLifecycle()
@@ -309,6 +333,11 @@ fun OwnTVShell(
     // The mini-player's own expand button always maximizes.
     val expandPlayer = { resumeVideo(); restoreFocus = false; playerMode = PlayerMode.FULLSCREEN }
     val exitPlayer = {
+        // Flush the resume position BEFORE the stream is torn down — stop() drops the loaded item's
+        // identity, after which neither view model can tell the position was theirs. Both calls are
+        // no-ops unless the player is on that section's item.
+        movieVm.saveProgressNow()
+        seriesVm.saveEpisodeProgressNow()
         resumeVideo() // restore mpv `vid=auto` before stop so the next played item isn't left video-less
         playerMode = PlayerMode.NONE
         showChannelList = false
@@ -776,6 +805,17 @@ fun OwnTVShell(
             } else {
                 MpvVideoSurface(player = player, modifier = Modifier.fillMaxSize(), autoFrameRate = isFull && autoFrameRate)
             }
+            // The item has no video track of its own (a radio channel, a music-only "movie"). Playing it is
+            // correct — but a black screen with sound reads as a broken player, so name what is happening.
+            // Read from whichever engine is on screen; only ever composed when there is no video to lose.
+            val audioOnlyMedia by if (liveOnExo) {
+                liveVm.previewEngine.audioOnlyMedia.collectAsStateWithLifecycle()
+            } else {
+                player.audioOnlyMedia.collectAsStateWithLifecycle()
+            }
+            if (audioOnlyMedia) {
+                tv.own.owntv.player.AudioOnlyBadge(modifier = Modifier.fillMaxSize(), compact = !isFull)
+            }
             // Direct render mode: mpv can't draw subtitles on the decoder-owned surface — the app does.
             // Also drawn docked (F19b): the mini-player is a real watching mode for a subtitled film, and
             // dropping the only line of dialogue there made subtitles look broken. Scaled to the box.
@@ -801,7 +841,14 @@ fun OwnTVShell(
                     fps = activeFps,
                     afrEnabled = autoFrameRate,
                     alreadyPrompted = afrPrompted,
-                    onEnable = { scope.launch { settingsRepo.setAutoFrameRate(true) } },
+                    // Mark it answered on BOTH paths. Enabling only set the setting, so a user who later
+                    // turned Auto frame rate back off was offered the "once ever" suggestion all over again.
+                    onEnable = {
+                        scope.launch {
+                            settingsRepo.setAutoFrameRate(true)
+                            settingsRepo.setAutoFrameRatePrompted()
+                        }
+                    },
                     onDismiss = { scope.launch { settingsRepo.setAutoFrameRatePrompted() } },
                 )
             }
@@ -853,13 +900,24 @@ fun OwnTVShell(
                     onForwardLive = if (isTunedLive) liveVm::forwardLive else null,
                     onGoToLive = if (isTunedLive) liveVm::goToLive else null,
                     onScrubLive = if (isTunedLive && canRewindLive) liveVm::scrubLive else null,
+                    jumpBackOptions = if (isTunedLive && canRewindLive) liveVm::currentJumpOptions else null,
+                    onJumpBack = if (isTunedLive && canRewindLive) liveVm::jumpBackTo else null,
+                    jumpBackWindowSec = if (isTunedLive && canRewindLive) liveVm::currentCatchupWindowSec else null,
+                    // Non-null only while an archive is on screen, so movies, episodes and live TV get
+                    // the single real clock and catch-up gets the pair.
+                    watchingWallMs = liveVm.watchingWallMs.collectAsStateWithLifecycle().value,
                     timeshiftOffsetSec = if (isTunedLive) timeshiftOffset else null,
                     onTuneToNumber = if (directTuneEnabled && isTunedLive && isLiveStream && timeshiftOffset == null && previewChannel != null) liveVm::tuneByNumber else null,
                     directTuneContextKey = previewChannel?.id ?: 0L,
                     // Show the ACTUAL running engine (mpv when pinned OR auto-fallen-back), not just the pin —
                     // otherwise an auto-fallback to mpv still read "EXO". true = on mpv (pill shows MPV, teal).
                     compatMode = if (isTunedLive) !liveOnExo else null,
-                    onToggleCompatMode = if (isTunedLive) liveVm::toggleForceMpv else null,
+                    // Hidden while rewound into the archive (same `timeshiftOffset == null` rule direct
+                    // tune follows above): switching engine restarts the channel at the live edge, which
+                    // threw the user out of the rewind with the HUD still counting "behind live".
+                    // Also hidden for a protected channel (#115): only ExoPlayer can license it, so the
+                    // toggle's other position is not a compatibility choice but a guaranteed failure.
+                    onToggleCompatMode = if (isTunedLive && timeshiftOffset == null && previewChannel?.drmConfig == null) liveVm::toggleForceMpv else null,
                     // VOD engine toggle (movies/series only — live and catch-up channels keep their own
                     // engine handling above): flip the current item between mpv and ExoPlayer.
                     vodOnExo = if (!isLiveStream && !isTunedLive) vodExoActive else null,
@@ -880,7 +938,27 @@ fun OwnTVShell(
                     liveEpgCard = if (isLiveChannel) {
                         {
                             val epg by liveVm.nowNext.collectAsStateWithLifecycle()
-                            tv.own.owntv.features.shell.components.LiveEpgCard(epg = epg)
+                            val archiveEpg by liveVm.archiveNowNext.collectAsStateWithLifecycle()
+                            val watching by liveVm.watchingWallMs.collectAsStateWithLifecycle()
+                            // Stacked: what was on air at the replayed moment, then what is on air now.
+                            // The live row is dimmed while an archive plays — it is context, not the
+                            // thing being watched — and returns to full strength back at the live edge.
+                            androidx.compose.foundation.layout.Column(
+                                horizontalAlignment = androidx.compose.ui.Alignment.End,
+                                verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(7.dp),
+                            ) {
+                                if (watching != null) {
+                                    tv.own.owntv.features.shell.components.LiveEpgCard(
+                                        epg = archiveEpg,
+                                        variant = tv.own.owntv.features.shell.components.EpgCardVariant.ARCHIVE,
+                                        atMs = watching,
+                                    )
+                                }
+                                tv.own.owntv.features.shell.components.LiveEpgCard(
+                                    epg = epg,
+                                    modifier = if (watching == null) Modifier else Modifier.alpha(0.55f),
+                                )
+                            }
                         }
                     } else null,
                     modifier = Modifier.fillMaxSize(),

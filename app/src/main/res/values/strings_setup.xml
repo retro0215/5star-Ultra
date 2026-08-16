@@ -345,6 +345,25 @@
     <!-- Translators: Error text on the companion PIN entry page when the entered PIN does not match. -->
     <string name="companion_pin_mismatch">That PIN did not match \u2014 try again.</string>
     <!-- Translators: Page title in the companion browser tab for the add-source page. "OwnTV" is a brand name. -->
+    <!-- Translators: Browser tab title for the page a phone uses to send a TMDB key to the TV. -->
+    <string name="companion_tmdb_page_title">Send TMDB key</string>
+    <!-- Translators: Heading on that page. -->
+    <string name="companion_tmdb_heading">Send your TMDB key</string>
+    <!-- Translators: Instructions on that page. -->
+    <string name="companion_tmdb_description">Sign in to TMDB below, copy your API key (v3 auth), paste it here and send it to your TV. A personal key is free and has practically no daily limit.</string>
+    <!-- Translators: Link to TMDB's API settings page. -->
+    <string name="companion_tmdb_get_key">Open TMDB API settings</string>
+    <!-- Translators: Error when the pasted text does not look like a TMDB API key. -->
+    <string name="companion_tmdb_invalid">That does not look like a TMDB API key. Copy the "API Key (v3 auth)" value.</string>
+    <!-- Translators: Confirmation shown on the phone after the key reaches the TV. -->
+    <string name="companion_tmdb_sent_body">Your TMDB key is now on the TV. Press Save there to start using it.</string>
+    <!-- Translators: Link back to the form to send another key. -->
+    <string name="companion_tmdb_sent_link">Send a different key</string>
+    <string name="companion_service_config_empty">Enter an API key, a Worker URL, or both.</string>
+    <string name="companion_service_config_invalid_key">That API key does not look valid.</string>
+    <string name="companion_service_config_invalid_url">Enter a valid HTTPS Worker URL.</string>
+    <string name="companion_service_config_sent">The connection details are now waiting on your TV. Review and save them there.</string>
+    <string name="companion_service_config_again">Send different connection details</string>
     <string name="companion_add_page_title">OwnTV \u2014 Add source</string>
     <!-- Translators: Heading on the companion add-source page. -->
     <string name="companion_add_heading">Add a source</string>
@@ -384,6 +403,10 @@
     <string name="companion_backup_file">Backup file</string>
     <!-- Translators: Error text on the companion backup restore page when no file has been selected. -->
     <string name="companion_choose_backup">Please choose a backup file first.</string>
+    <!-- Translators: Label for the optional playlist-file input on the companion Add a source page (M3U tab). Lets the user upload a playlist from the computer instead of typing a URL. -->
+    <string name="companion_playlist_file">Or upload a playlist file</string>
+    <!-- Translators: Error text on the companion Add a source page (M3U tab) when neither a playlist URL was typed nor a file chosen. -->
+    <string name="companion_playlist_url_or_file">Enter a playlist URL or choose a file.</string>
     <!-- Translators: Loading status shown on the companion page while a file is being uploaded to the TV. -->
     <string name="companion_sending">Sending\u2026</string>
     <!-- Translators: Error shown in the companion browser page when an upload to the TV fails. "status" is a numeric HTTP response such as 403. -->

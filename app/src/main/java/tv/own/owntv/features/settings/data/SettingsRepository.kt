@@ -77,6 +77,17 @@ object ChNavLimits {
     const val DEFAULT_SKIP = 10
 }
 
+/** Seek/rewind step choices. Top-level so the settings UI and the defaults share one list. */
+object SeekSteps {
+    /** Rewind/forward inside a movie or episode — the player's long-standing 10 s. */
+    const val DEFAULT_SEEK_STEP_SEC = 10
+    val SEEK_CHOICES = listOf(5, 10, 15, 30, 60)
+
+    /** Stepping through a live channel's catch-up archive — the long-standing 30 s. */
+    const val DEFAULT_LIVE_REWIND_STEP_SEC = 30
+    val LIVE_REWIND_CHOICES = listOf(10, 15, 30, 60, 120)
+}
+
 /**
  * Persists app-level preferences. Phase 1 only needs the theme selection; this will grow to hold
  * UI zoom, custom user-agent, refresh-on-start, etc. in later phases.
@@ -162,7 +173,9 @@ class SettingsRepository(private val context: Context, private val localeStore: 
         val ANDROID_TV_HOME = booleanPreferencesKey("android_tv_home")
         // Video Player Settings
         val HW_DECODING = booleanPreferencesKey("hw_decoding")
-        val VOD_PREFER_EXO = booleanPreferencesKey("vod_prefer_exo")
+        val VOD_PREFER_EXO = booleanPreferencesKey("vod_prefer_exo") // legacy; read for migration only
+        val LIVE_ENGINE = stringPreferencesKey("live_engine")
+        val VOD_ENGINE = stringPreferencesKey("vod_engine")
         val MEASURED_STREAM_STATS = booleanPreferencesKey("measured_stream_stats")
         val DETAILED_DIAGNOSTICS = booleanPreferencesKey("detailed_diagnostics")
         val DIRECT_TUNE = booleanPreferencesKey("direct_tune")
@@ -176,10 +189,15 @@ class SettingsRepository(private val context: Context, private val localeStore: 
         val EXTERNAL_PLAYER_MOVIES = booleanPreferencesKey("external_player_movies")
         val EXTERNAL_PLAYER_SERIES = booleanPreferencesKey("external_player_series")
         val DEFAULT_ZOOM = stringPreferencesKey("default_zoom")
+        val DEFAULT_VOLUME = intPreferencesKey("default_volume")
+        val DEINTERLACE = booleanPreferencesKey("deinterlace")
+        val SEEK_STEP_SEC = intPreferencesKey("seek_step_sec")
+        val LIVE_REWIND_STEP_SEC = intPreferencesKey("live_rewind_step_sec")
         val SUB_SCALE = floatPreferencesKey("sub_scale")
         // Subtitle appearance (#96): off by default so every renderer keeps its stock look —
         // notably the embedded broadcaster styling of Live TV CEA-608/teletext cues.
         val SUB_STYLE_ENABLED = booleanPreferencesKey("sub_style_enabled")
+        val SUB_FONT = stringPreferencesKey("sub_font")
         val SUB_COLOR = stringPreferencesKey("sub_color")
         val SUB_POSITION = stringPreferencesKey("sub_position")
         val SUB_BG_OPACITY = intPreferencesKey("sub_bg_opacity")
@@ -230,6 +248,8 @@ class SettingsRepository(private val context: Context, private val localeStore: 
         val METADATA_MODE = stringPreferencesKey("metadata_mode")
         val TMDB_API_KEY = stringPreferencesKey("tmdb_api_key")
         val METADATA_SERVER_URL = stringPreferencesKey("metadata_server_url")
+        val OPEN_SUBTITLES_API_KEY = stringPreferencesKey("open_subtitles_api_key")
+        val OPEN_SUBTITLES_SERVER_URL = stringPreferencesKey("open_subtitles_server_url")
         // TMDB content language (ISO 639-1, optionally with region — e.g. "el", "pt-BR"). Blank = the
         // TMDB default (en-US), which is what every install used before this setting existed, so leaving
         // it blank keeps existing users' metadata exactly as it was. "auto" = follow the device locale.
@@ -517,6 +537,15 @@ class SettingsRepository(private val context: Context, private val localeStore: 
         context.dataStore.edit { it[Keys.METADATA_SERVER_URL] = url.trim() }
     }
 
+    val openSubtitlesApiKey: Flow<String> = prefsFlow { it[Keys.OPEN_SUBTITLES_API_KEY] ?: "" }
+    suspend fun setOpenSubtitlesApiKey(key: String) { context.dataStore.edit { it[Keys.OPEN_SUBTITLES_API_KEY] = key.trim() } }
+
+    val openSubtitlesServerUrl: Flow<String> = prefsFlow { it[Keys.OPEN_SUBTITLES_SERVER_URL] ?: "" }
+    suspend fun setOpenSubtitlesServerUrl(url: String) { context.dataStore.edit { it[Keys.OPEN_SUBTITLES_SERVER_URL] = url.trim() } }
+
+    suspend fun currentOpenSubtitlesApiKey(): String = context.dataStore.data.first()[Keys.OPEN_SUBTITLES_API_KEY] ?: ""
+    suspend fun currentOpenSubtitlesServerUrl(): String = context.dataStore.data.first()[Keys.OPEN_SUBTITLES_SERVER_URL] ?: ""
+
     /**
      * TMDB content language. Blank = TMDB's own default (en-US) — the pre-existing behaviour, so an
      * upgrade never silently changes anyone's metadata. "auto" = follow the device locale, resolved at
@@ -711,14 +740,57 @@ class SettingsRepository(private val context: Context, private val localeStore: 
         context.dataStore.edit { it[Keys.HW_DECODING] = enabled }
     }
 
-    /** Preferred engine for Movies & Series (VOD). Off (default) = mpv first with an automatic ExoPlayer
-     *  fallback; on = ExoPlayer first with an automatic mpv fallback. mpv is the default because it has
-     *  the wider codec support (DTS/TrueHD audio, odd containers) and the A/V-sync nudge; ExoPlayer-first
-     *  is for devices/providers where mpv's path can't open streams that ExoPlayer plays fine. */
-    val vodPreferExo: Flow<Boolean> = prefsFlow { it[Keys.VOD_PREFER_EXO] ?: false }
+    /**
+     * Which engine Live TV starts a channel on, and whether it may hand over to the other one.
+     *
+     * Default is [EnginePreference.EXO_FIRST] — ExoPlayer opens far faster, which is what channel
+     * surfing is made of, and it is the only engine with live closed captions; mpv catches what it
+     * cannot play. The other three exist because that automatic handover is not always wanted:
+     *
+     *  - **mpv first** for a panel or a TV where ExoPlayer is the one that usually loses.
+     *  - **The two "only" modes** for anyone who has established that the second engine never works for
+     *    them. A handover costs a stop, a surface release and a re-open — several seconds of black on
+     *    every unplayable channel — so paying it for an engine that was never going to help is pure loss.
+     *    "Only" still keeps that engine's own `.m3u8` → `.ts` step; what it drops is the other engine.
+     *
+     * A channel pinned with the HUD "compatibility mode" toggle ignores this setting — see [ForceMpvStore].
+     */
+    val liveEnginePreference: Flow<tv.own.owntv.player.EnginePreference> = prefsFlow { prefs ->
+        prefs[Keys.LIVE_ENGINE]?.let { runCatching { tv.own.owntv.player.EnginePreference.valueOf(it) }.getOrNull() }
+            ?: tv.own.owntv.player.EnginePreference.EXO_FIRST
+    }
 
-    suspend fun setVodPreferExo(enabled: Boolean) {
-        context.dataStore.edit { it[Keys.VOD_PREFER_EXO] = enabled }
+    suspend fun setLiveEnginePreference(preference: tv.own.owntv.player.EnginePreference) {
+        context.dataStore.edit { it[Keys.LIVE_ENGINE] = preference.name }
+    }
+
+    /**
+     * Which engine Movies & Series start on, and whether it may hand over to the other one.
+     *
+     * Default is [EnginePreference.MPV_FIRST] — the opposite of Live TV's, deliberately: a film is one
+     * long open where breadth of codec support beats speed of opening, and mpv has the wider set
+     * (DTS/TrueHD audio, odd containers) plus the A/V-sync nudge. ExoPlayer-first is for devices and
+     * providers where mpv's path can't open files ExoPlayer plays fine.
+     *
+     * The two "only" modes drop the automatic handover for anyone whose second engine never works —
+     * see [liveEnginePreference] for the reasoning, which is identical. Two caveats specific to VOD:
+     * ExoPlayer cannot decode DTS/TrueHD at all (the handoff is refused rather than attempted, so
+     * "only ExoPlayer" means those files simply don't play), and the image-subtitle handoff to
+     * ExoPlayer is not a fallback — it stays available in both "only" modes, since it is the only way
+     * PGS/VOBSUB subtitles are ever rendered.
+     *
+     * Migrated in place from the older `vod_prefer_exo` switch, which is still read when the new key
+     * has never been written: on → [EnginePreference.EXO_FIRST], off → [EnginePreference.MPV_FIRST].
+     * Nobody's playback changes on upgrade.
+     */
+    val vodEnginePreference: Flow<tv.own.owntv.player.EnginePreference> = prefsFlow { prefs ->
+        prefs[Keys.VOD_ENGINE]?.let { runCatching { tv.own.owntv.player.EnginePreference.valueOf(it) }.getOrNull() }
+            ?: if (prefs[Keys.VOD_PREFER_EXO] == true) tv.own.owntv.player.EnginePreference.EXO_FIRST
+            else tv.own.owntv.player.EnginePreference.MPV_FIRST
+    }
+
+    suspend fun setVodEnginePreference(preference: tv.own.owntv.player.EnginePreference) {
+        context.dataStore.edit { it[Keys.VOD_ENGINE] = preference.name }
     }
 
     /** Measure live fps / bitrate / dropped frames for the stream-info overlay. On (default) = the
@@ -794,9 +866,6 @@ class SettingsRepository(private val context: Context, private val localeStore: 
      *  (lip-sync drift) on VODs. Stereo's small, well-reported buffer stays locked. Hence: default OFF. */
     val surroundSound: Flow<Boolean> = prefsFlow { it[Keys.SURROUND_SOUND] ?: false }
 
-    suspend fun setSurroundSound(enabled: Boolean) {
-        context.dataStore.edit { it[Keys.SURROUND_SOUND] = enabled }
-    }
 
     /**
      * The three-state replacement for [surroundSound] (Auto / Stereo only / Surround).
@@ -838,6 +907,52 @@ class SettingsRepository(private val context: Context, private val localeStore: 
         context.dataStore.edit { it[Keys.DEFAULT_ZOOM] = name }
     }
 
+    /**
+     * Volume percent every item starts at (100 = untouched, up to the 150 boost ceiling). A film the
+     * user has individually turned up overrides this — see
+     * [tv.own.owntv.core.player.PlaybackPrefsStore].
+     */
+    val defaultVolume: Flow<Int> = prefsFlow { (it[Keys.DEFAULT_VOLUME] ?: 100).coerceIn(0, 150) }
+
+    suspend fun setDefaultVolume(percent: Int) {
+        context.dataStore.edit { it[Keys.DEFAULT_VOLUME] = percent.coerceIn(0, 150) }
+    }
+
+    /**
+     * How far the player's rewind/forward buttons and the seek bar's ◀/▶ jump in a movie or episode.
+     *
+     * Separate from [liveRewindStepSec] on purpose: skipping an ad break in a film and stepping back
+     * through a live channel's archive are different journeys, and one number can't be right for both
+     * — which is why the two have always had different hardcoded values (10 s and 30 s).
+     */
+    val seekStepSec: Flow<Int> = prefsFlow { it[Keys.SEEK_STEP_SEC] ?: SeekSteps.DEFAULT_SEEK_STEP_SEC }
+
+    suspend fun setSeekStepSec(seconds: Int) {
+        context.dataStore.edit { it[Keys.SEEK_STEP_SEC] = seconds }
+    }
+
+    /**
+     * Deinterlacing for interlaced broadcast material (old SD channels that show combing on movement).
+     * Off by default, because the TV's own panel processing usually handles it and a filter that isn't
+     * needed only costs frames.
+     *
+     * mpv only, and only while mpv is doing its own rendering — on the direct decoder-to-surface path
+     * ([OwnTVPlayer] `vo=mediacodec_embed`) no video filter runs at all, so nothing is inserted there.
+     * The setting's description says so rather than pretending otherwise.
+     */
+    val deinterlace: Flow<Boolean> = prefsFlow { it[Keys.DEINTERLACE] ?: false }
+
+    suspend fun setDeinterlace(enabled: Boolean) {
+        context.dataStore.edit { it[Keys.DEINTERLACE] = enabled }
+    }
+
+    /** How far one press of Rewind/Forward moves inside a live channel's catch-up archive. */
+    val liveRewindStepSec: Flow<Int> = prefsFlow { it[Keys.LIVE_REWIND_STEP_SEC] ?: SeekSteps.DEFAULT_LIVE_REWIND_STEP_SEC }
+
+    suspend fun setLiveRewindStepSec(seconds: Int) {
+        context.dataStore.edit { it[Keys.LIVE_REWIND_STEP_SEC] = seconds }
+    }
+
     // --- Subtitle appearance (#96): size, text color, screen position, background transparency ---
     // Two levels of opt-in. The master toggle gates everything: while it's off NOTHING here is
     // applied and every renderer keeps its stock look (mpv defaults, the overlay's hardcoded 45%
@@ -865,6 +980,17 @@ class SettingsRepository(private val context: Context, private val localeStore: 
 
     suspend fun setSubtitleStyleEnabled(enabled: Boolean) {
         context.dataStore.edit { it[Keys.SUB_STYLE_ENABLED] = enabled }
+    }
+
+    /** Null leaves the renderer's own or embedded subtitle font untouched. */
+    val subtitleFont: Flow<AppFontFamily?> = prefsFlow { prefs ->
+        prefs[Keys.SUB_FONT]?.let { stored -> AppFontFamily.entries.firstOrNull { it.name == stored } }
+    }
+
+    suspend fun setSubtitleFont(font: AppFontFamily?) {
+        context.dataStore.edit { prefs ->
+            if (font == null) prefs.remove(Keys.SUB_FONT) else prefs[Keys.SUB_FONT] = font.name
+        }
     }
 
     /** Subtitle text color as "#RRGGBB"; blank ([SubtitleStyle.COLOR_DEFAULT]) = untouched. */
@@ -1538,6 +1664,7 @@ class SettingsRepository(private val context: Context, private val localeStore: 
         // TMDB metadata: source mode + self-host URL. The user's own TMDB API key (Keys.TMDB_API_KEY) is a
         // secret and is deliberately NOT backed up in plaintext (same policy as the proxy password).
         Keys.METADATA_SERVER_URL, Keys.METADATA_MODE, Keys.METADATA_LANGUAGE,
+        Keys.OPEN_SUBTITLES_SERVER_URL,
         // Download folder. Backed up so a same-device reinstall keeps the chosen folder; on a different
         // device a path that no longer exists is harmless — StorageAccess.resolveRoot falls back to app
         // storage, so a stale restore never breaks downloads.
@@ -1556,6 +1683,7 @@ class SettingsRepository(private val context: Context, private val localeStore: 
         // Subtitle appearance: text color and screen position (toggle is a bool key, size a float
         // key, background transparency an int key).
         Keys.SUB_COLOR,
+        Keys.SUB_FONT,
         Keys.SUB_POSITION,
         // Custom DNS — not secret, backed up alongside proxy
         Keys.DNS_HOST, Keys.DNS_DOH_URL,
@@ -1567,7 +1695,7 @@ class SettingsRepository(private val context: Context, private val localeStore: 
         // The STATIC-mode hidden set rides with backup so a reinstall keeps the user's hidden icons.
         Keys.NAV_MENU_HIDDEN,
     )
-    private val backupIntKeys = listOf(Keys.UI_ZOOM_PCT, Keys.FONT_SIZE_PCT, Keys.AUDIO_DELAY_MS, Keys.CATCHUP_OFFSET_MIN, Keys.EPG_OFFSET_MIN, Keys.PROXY_PORT, Keys.DNS_PORT, Keys.CH_NAV_UP_SKIP, Keys.CH_NAV_DOWN_SKIP, Keys.MINI_PLAYER_SIZE_PCT, Keys.LIVE_LATENCY_CUSTOM_SECS, Keys.LIVE_PREROLL_SECS, Keys.GLASS_SCOPE, Keys.GLASS_ALPHA, Keys.GLASS_BLUR, Keys.GLASS_HIGHLIGHT, Keys.SUB_BG_OPACITY,
+    private val backupIntKeys = listOf(Keys.DEFAULT_VOLUME, Keys.SEEK_STEP_SEC, Keys.LIVE_REWIND_STEP_SEC, Keys.UI_ZOOM_PCT, Keys.FONT_SIZE_PCT, Keys.AUDIO_DELAY_MS, Keys.CATCHUP_OFFSET_MIN, Keys.EPG_OFFSET_MIN, Keys.PROXY_PORT, Keys.DNS_PORT, Keys.CH_NAV_UP_SKIP, Keys.CH_NAV_DOWN_SKIP, Keys.MINI_PLAYER_SIZE_PCT, Keys.LIVE_LATENCY_CUSTOM_SECS, Keys.LIVE_PREROLL_SECS, Keys.GLASS_SCOPE, Keys.GLASS_ALPHA, Keys.GLASS_BLUR, Keys.GLASS_HIGHLIGHT, Keys.SUB_BG_OPACITY,
         Keys.PANEL_W_LIVE_CAT, Keys.PANEL_W_LIVE_LIST, Keys.PANEL_W_LIVE_PREVIEW,
         Keys.PANEL_W_MOVIES_CAT, Keys.PANEL_W_MOVIES_LIST, Keys.PANEL_W_MOVIES_PREVIEW,
         Keys.PANEL_W_SERIES_CAT, Keys.PANEL_W_SERIES_LIST, Keys.PANEL_W_SERIES_PREVIEW)
@@ -1579,17 +1707,36 @@ class SettingsRepository(private val context: Context, private val localeStore: 
         Keys.DNS_ENABLED,
         Keys.REMEMBER_LAST_LIVE, Keys.REMEMBER_LAST_MOVIES, Keys.REMEMBER_LAST_SERIES,
         Keys.REMEMBER_CAT_LIVE, Keys.REMEMBER_CAT_MOVIES, Keys.REMEMBER_CAT_SERIES,
-        Keys.SUB_STYLE_ENABLED, Keys.SUB_SEARCH_FILTER,
+        Keys.SUB_STYLE_ENABLED, Keys.SUB_SEARCH_FILTER, Keys.DEINTERLACE,
         Keys.PANEL_W_LIVE_ON, Keys.PANEL_W_MOVIES_ON, Keys.PANEL_W_SERIES_ON,
         Keys.AMBIENT_GLOW_ENABLED, Keys.AMBIENT_GLOW_PULSE,
         Keys.GLASS_ALLOW_FULL_TRANSPARENCY, Keys.GLASS_DEPTH_EFFECTS,
     )
     private val backupFloatKeys = listOf(Keys.SUB_SCALE)
 
+    /**
+     * "Remember last category" values (see the REMEMBER_CAT_* toggles, which are backed up as plain
+     * booleans above). These need a filter rather than a straight whitelist entry, so they live apart:
+     * a provider folder is stored as "FOLDER:<Room category id>", and Room content ids are recreated
+     * by every sync (the catalog is clear-then-insert), so that value means nothing on another device
+     * — restoring it would land the user in an arbitrary category. The stable forms travel:
+     * "ALL" / "FAV" / "HIST" and "CUSTOM:<uuid>", a user-created category whose id really is portable.
+     *
+     * `last_live_channel` is deliberately absent for the same reason and has no stable form at all:
+     * it is a Room channel id, so there is nothing here worth carrying.
+     */
+    private val backupLastCategoryKeys = listOf(
+        Keys.LAST_LIVE_CATEGORY, Keys.LAST_MOVIES_CATEGORY, Keys.LAST_SERIES_CATEGORY,
+    )
+
+    private fun isPortableCategoryKey(value: String): Boolean =
+        value == "ALL" || value == "FAV" || value == "HIST" || value.startsWith("CUSTOM:")
+
     suspend fun exportSettings(): org.json.JSONObject {
         val p = context.dataStore.data.first()
         return org.json.JSONObject().apply {
             backupStringKeys.forEach { k -> p[k]?.let { put(k.name, it) } }
+            backupLastCategoryKeys.forEach { k -> p[k]?.takeIf(::isPortableCategoryKey)?.let { put(k.name, it) } }
             backupStringSetKeys.forEach { k -> p[k]?.let { put(k.name, org.json.JSONArray(it)) } }
             backupIntKeys.forEach { k -> p[k]?.let { put(k.name, it) } }
             backupBoolKeys.forEach { k -> p[k]?.let { put(k.name, it) } }
@@ -1604,6 +1751,12 @@ class SettingsRepository(private val context: Context, private val localeStore: 
     suspend fun importSettings(o: org.json.JSONObject): SettingsImportResult {
         context.dataStore.edit { prefs ->
             backupStringKeys.forEach { k -> if (o.has(k.name)) prefs[k] = o.getString(k.name) }
+            // Guarded on read as well as on write: a file written by another build (or edited by hand)
+            // must not be able to restore a "FOLDER:<id>" that points at whatever this device's sync
+            // happens to have put behind that number.
+            backupLastCategoryKeys.forEach { k ->
+                if (o.has(k.name)) o.getString(k.name).takeIf(::isPortableCategoryKey)?.let { prefs[k] = it }
+            }
             backupStringSetKeys.forEach { k ->
                 if (o.has(k.name)) prefs[k] = o.getJSONArray(k.name).let { arr -> buildSet { for (i in 0 until arr.length()) add(arr.getString(i)) } }
             }
