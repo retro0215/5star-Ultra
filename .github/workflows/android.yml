@@ -70,7 +70,7 @@ jobs:
     if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     env:
-      IS_TAG: ${{ startsWith(github.ref, 'refs/tags/5starv-') }}
+
       # Set at runtime via $GITHUB_ENV in the "Name the APK" step. Declared here (empty) so static
       # linters don't flag the later ${{ env.APK_OUT }} references as "context access might be invalid".
       APK_OUT: ""
@@ -162,18 +162,18 @@ jobs:
       - name: Name the APK (5Star-Ultra-v<version>)
         run: |
           mkdir -p dist
-          if [ "$IS_TAG" = "true" ]; then
+          if [[ "$GITHUB_REF" == refs/tags/5star-v* ]]; then
             OUT="5Star-Ultra-v${{ steps.ver.outputs.name }}.apk"
           else
             OUT="5Star-Ultra-dev-${GITHUB_SHA::7}.apk"
           fi
-          cp "$ARM_SRC" "dist/$OUT"
+          cp "$ARM_SRC" "dist/5Star-Ultra.apk"
           echo "APK_OUT=$OUT" >> "$GITHUB_ENV"
           echo "Packaged dist/$OUT (arm: arm64-v8a + armeabi-v7a)"
           # Tag builds also ship a stable-named copy so a fixed URL always serves the latest signed
           # release: https://github.com/<repo>/releases/latest/download/5Star-Ultra.apk
           # (used by the Fire TV Downloader code and any "always-latest" sideload link).
-          if [ "$IS_TAG" = "true" ]; then
+          if [[ "$GITHUB_REF" == refs/tags/5star-v* ]]; then
             cp "$ARM_SRC" "dist/5Star-Ultra.apk"
             # Separate x86_64 build for emulators / rare Intel boxes. Pinned to the version only —
             # no always-latest copy, since real devices (the Downloader audience) don't need it.
