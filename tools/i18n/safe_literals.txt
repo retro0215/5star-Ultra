@@ -4693,3 +4693,4 @@
 1	empty	app/src/main/java/tv/own/owntv/ui/theme/OwnTVColors.kt	\0
 1	technical	app/src/main/java/tv/own/owntv/ui/theme/OwnTVColors.kt	#
 1	empty	app/src/main/java/tv/own/owntv/ui/theme/Theme.kt	\0
+1	technical	app/src/main/java/tv/own/owntv/core/update/UpdateManager.kt	5star-v

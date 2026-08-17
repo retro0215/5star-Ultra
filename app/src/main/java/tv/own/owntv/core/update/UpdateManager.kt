@@ -89,7 +89,7 @@ class UpdateManager(
                     val body = resp.body.string()
                     if (body.isBlank()) throw InvalidReleaseResponseException()
                     val o = runCatching { JSONObject(body) }.getOrElse { throw InvalidReleaseResponseException() }
-                    val version = o.optString("tag_name").removePrefix("5star-v").removePrefix("v").takeIf { it.isNotBlank() }
+                    val version = o.optString("tag_name").removePrefix(RELEASE_TAG_PREFIX).removePrefix("v").takeIf { it.isNotBlank() }
                         ?: throw InvalidReleaseResponseException()
                     val notes = o.optString("body").take(16_000)
                     val assets = o.optJSONArray("assets") ?: throw InvalidReleaseResponseException()
@@ -201,5 +201,6 @@ class UpdateManager(
     companion object {
         private const val TAG = "UpdateManager"
         const val REPO = "retro0215/5Star-Ultra"
+        private const val RELEASE_TAG_PREFIX = "5star-v"
     }
 }
