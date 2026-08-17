@@ -192,7 +192,7 @@ jobs:
           if-no-files-found: error
 
       - name: Extract release notes from CHANGELOG_APP.md
-        if: if: startsWith(github.ref, 'refs/tags/5star-v')
+        if: startsWith(github.ref, 'refs/tags/5star-v')
         env:
           TAG: ${{ github.ref_name }}
         run: |
