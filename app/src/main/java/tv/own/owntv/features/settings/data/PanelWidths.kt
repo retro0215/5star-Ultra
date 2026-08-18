@@ -73,7 +73,7 @@ fun defaultPanelShares(
     gapTotal: Dp = 8.dp
 ): PanelShares {
     return when (section) {
-        PanelSection.LIVE -> PanelShares(30, 45, 25)
+        PanelSection.LIVE -> PanelShares(20, 35, 45)
         PanelSection.MOVIES -> PanelShares(15, 65, 20)
         PanelSection.SERIES -> PanelShares(15, 65, 20)
     }
@@ -123,3 +123,4 @@ fun computePanelWidths(
         preview = if (shares.preview == 0) 0.dp else (content - category - list).coerceAtLeast(1f).dp,
     )
 }
+

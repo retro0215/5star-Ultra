@@ -1291,7 +1291,7 @@ class SettingsRepository(private val context: Context, private val localeStore: 
     }
 
     /** Whether the Live preview plays audio (off by default so browsing stays quiet). */
-    val livePreviewAudio: Flow<Boolean> = prefsFlow { it[Keys.LIVE_PREVIEW_AUDIO] ?: false }
+    val livePreviewAudio: Flow<Boolean> = prefsFlow { it[Keys.LIVE_PREVIEW_AUDIO] ?: true }
 
     suspend fun setLivePreviewAudio(enabled: Boolean) {
         context.dataStore.edit { it[Keys.LIVE_PREVIEW_AUDIO] = enabled }
@@ -2024,3 +2024,4 @@ class SettingsRepository(private val context: Context, private val localeStore: 
         }
     }
 }
+
